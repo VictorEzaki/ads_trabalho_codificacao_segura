@@ -33,8 +33,8 @@ async function main() {
     console.log('Sincronização com banco de dados realizada.');
     console.log('Conexão com o banco de dados estabelecida com sucesso.');
     
-    const server = app.listen(3000, () => {
-      console.info(`✅ Servidor rodando na porta 3000`);
+    const server = app.listen(3001, () => {
+      console.info(`✅ Servidor rodando na porta 3001`);
     });
 
     server.on('error', (error) => {
