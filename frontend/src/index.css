@@ -1,0 +1,26 @@
+:root {
+  --color-bg: #F4F6F8;
+  --color-surface: #FFFFFF;
+
+  --color-primary: #0F766E;
+  --color-primary-dark: #115E59;
+
+  --color-success: #16A34A;
+  --color-danger: #DC2626;
+  --color-warning: #F59E0B;
+
+  --color-text: #1F2937;
+  --color-muted: #6B7280;
+  --color-border: #E5E7EB;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Arial, Helvetica, sans-serif;
+}
