@@ -1,5 +1,9 @@
 const UserController = require('../controllers/user');
 const HttpError = require('./../errors/HttpError');
+const { setAuthCookies, clearAuthCookies } = require("./../utils/cookie.js");
+
+const ACCESS_TOKEN_COOKIE_NAME = "accessToken";
+const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
 class UserView {
     constructor() {
@@ -8,8 +12,10 @@ class UserView {
     async login(req, res, next) {
         try {
             const { email, password } = req.body;
-
             const auth = await UserController.login(email, password);
+
+            setAuthCookies(res, auth.accessToken, auth.refreshToken);
+            
             res.status(200).json(auth);
         } catch (error) {
             next(error)
@@ -28,8 +34,10 @@ class UserView {
     async create(req, res, next) {
         try {
             const { email, password, name } = req.body;
-
             const newUser = await UserController.create(email, password, name);
+
+            setAuthCookies(res, newUser.accessToken, newUser.refreshToken);
+            
             res.status(201).json(newUser);
         } catch (error) {
             next(error)
