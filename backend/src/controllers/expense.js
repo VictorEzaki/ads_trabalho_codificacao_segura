@@ -27,7 +27,7 @@ class ExpenseController {
         return expense;
     }
     
-    async create(amount, date, description, status, categoryId, userId) {
+    async create(amount, date, description, status, categoryId, userId, receiptPath = null) {
         // validações da regra de negócio
         // O campo amount deve ser maior que zero
         if (amount !== undefined && amount < 0) {
@@ -65,7 +65,7 @@ class ExpenseController {
             throw new HttpError(400, "Descrição de despesa ausente ou inválido.");
         }
         
-        const expenseCreated = await ExpenseModel.create(amount, date, description, status, categoryId, userId)
+        const expenseCreated = await ExpenseModel.create(amount, date, description, status, categoryId, userId, receiptPath)
         
         if (!expenseCreated) {
             throw new HttpError(500, 'Erro ao criar despesa.');
@@ -74,7 +74,7 @@ class ExpenseController {
         return expenseCreated;
     }
     
-    async update(amount, date, description, status, categoryId, userId, id) {
+    async update(amount, date, description, status, categoryId, userId, id, receiptPath) {
         // validações da regra de negócio
         // ID é obrigatório para edição
         if (!id) {
@@ -129,11 +129,11 @@ class ExpenseController {
         }
         
         const expense = await ExpenseModel.getById(id);
-        if (!expense) {
+        if (!expense || Number(expense.userId) !== Number(userId)) {
             throw new HttpError(404, 'Despesa não encontrada.');
         }
         
-        const expenseUpdated = await ExpenseModel.update(amount, date, description, status, categoryId, userId, id);
+        const expenseUpdated = await ExpenseModel.update(amount, date, description, status, categoryId, userId, id, receiptPath);
         if (!expenseUpdated) {
             throw new HttpError(500, 'Ocorreu um erro ao editar a despesa!');
         }
@@ -141,6 +141,25 @@ class ExpenseController {
         return expenseUpdated;
     }
     
+
+
+    async getReceiptPathForUpdate(id, userId) {
+        const expense = await ExpenseModel.getById(Number(id));
+        if (!expense || Number(expense.userId) !== Number(userId)) {
+            throw new HttpError(404, 'Despesa não encontrada.');
+        }
+        return expense.receiptPath || null;
+    }
+
+    async getReceipt(id, userId) {
+        if (!id || id < 1) throw new HttpError(400, 'ID inválido.');
+        const expense = await ExpenseModel.getById(Number(id));
+        if (!expense || Number(expense.userId) !== Number(userId) || !expense.receiptPath) {
+            throw new HttpError(404, 'Anexo não encontrado.');
+        }
+        return expense.receiptPath;
+    }
+
     async delete(id) {
         // ID é obrigatório para edição
         if (!id) {
