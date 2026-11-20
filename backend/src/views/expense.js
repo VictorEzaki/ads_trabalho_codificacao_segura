@@ -1,6 +1,10 @@
 // req, res
 const ExpenseController = require('../controllers/expense');
 const HttpError = require('./../errors/HttpError');
+const fs = require('fs/promises');
+const path = require('path');
+
+const uploadDirectory = path.resolve(__dirname, '../../uploads/cupons');
 
 class ExpenseView {
     async getAll(req, res, next) {
@@ -32,26 +36,84 @@ class ExpenseView {
     
     async create(req, res, next) {
         try {
-            const { amount, date, description, status, categoryId, userId } = req.body;
-            
-            const expense = await ExpenseController.create(amount, date, description, status, categoryId, userId);
-            
+            const { amount, date, description, status, categoryId } = req.body;
+            const userId = req.user.id;
+            let receiptPath = null;
+
+            if (req.file) {
+                // Confere a assinatura do arquivo: um PDF válido começa com %PDF-.
+                const handle = await fs.open(req.file.path, 'r');
+                const header = Buffer.alloc(5);
+                await handle.read(header, 0, 5, 0);
+                await handle.close();
+
+                if (header.toString() !== '%PDF-') {
+                    await fs.unlink(req.file.path).catch(() => {});
+                    throw new HttpError(400, 'O arquivo enviado não é um PDF válido.');
+                }
+
+                receiptPath = req.file.filename;
+            }
+
+            const expense = await ExpenseController.create(
+                Number(amount), date, description, status,
+                Number(categoryId), userId, receiptPath
+            );
+
             res.status(201).json(expense);
         } catch (error) {
-            next(error)
+            if (req.file?.path) {
+                await fs.unlink(req.file.path).catch(() => {});
+            }
+            next(error);
         }
     }
     
     async update(req, res, next) {
         try {
-            const { amount, date, description, status, categoryId, userId } = req.body;
+            const { amount, date, description, status, categoryId } = req.body;
             const { id } = req.params;
-            
-            const expense = await ExpenseController.update(amount, date, description, status, categoryId, userId, Number(id));
-            
+            let receiptPath;
+
+            if (req.file) {
+                const handle = await fs.open(req.file.path, 'r');
+                const header = Buffer.alloc(5);
+                await handle.read(header, 0, 5, 0);
+                await handle.close();
+                if (header.toString() !== '%PDF-') {
+                    await fs.unlink(req.file.path).catch(() => {});
+                    throw new HttpError(400, 'O arquivo enviado não é um PDF válido.');
+                }
+                receiptPath = req.file.filename;
+            }
+
+            const previousReceipt = req.file ? await ExpenseController.getReceiptPathForUpdate(Number(id), req.user.id) : null;
+            const expense = await ExpenseController.update(
+                amount === undefined ? undefined : Number(amount), date, description, status,
+                categoryId === undefined ? undefined : Number(categoryId), req.user.id, Number(id), receiptPath
+            );
+
+            if (req.file && previousReceipt && previousReceipt !== receiptPath) {
+                await fs.unlink(path.join(uploadDirectory, path.basename(previousReceipt))).catch(() => {});
+            }
             res.status(200).json(expense);
         } catch (error) {
-            next(error)
+            if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
+            next(error);
+        }
+    }
+
+    async getReceipt(req, res, next) {
+        try {
+            const filename = await ExpenseController.getReceipt(Number(req.params.id), req.user.id);
+            const safePath = path.join(uploadDirectory, path.basename(filename));
+            await fs.access(safePath);
+            const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `${disposition}; filename="cupom-${req.params.id}.pdf"`);
+            res.sendFile(safePath);
+        } catch (error) {
+            next(error);
         }
     }
     

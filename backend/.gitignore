@@ -17,3 +17,6 @@ dist/
 build/
 .next/
 .nuxt/
+
+# Uploaded receipt files
+uploads/

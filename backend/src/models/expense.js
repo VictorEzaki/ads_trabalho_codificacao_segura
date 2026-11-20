@@ -35,6 +35,10 @@ const db = sequelize.define('expenses', {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
     },
+    receiptPath: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -106,11 +110,11 @@ class ExpenseModel {
         });
     }
     
-    async create(amount, date, description, status, categoryId, userId) {
-        return db.create({ amount, date, description, status, categoryId, userId })
+    async create(amount, date, description, status, categoryId, userId, receiptPath = null) {
+        return db.create({ amount, date, description, status, categoryId, userId, receiptPath })
     }
     
-    async update(amount, date, description, status, categoryId, userId, id) {
+    async update(amount, date, description, status, categoryId, userId, id, receiptPath) {
         const expense = await db.findByPk(id);
         
         if (!expense) {
@@ -123,6 +127,7 @@ class ExpenseModel {
         expense.status = status;
         expense.categoryId = categoryId;
         expense.userId = userId;
+        if (receiptPath !== undefined) expense.receiptPath = receiptPath;
         
         await expense.save();
         
