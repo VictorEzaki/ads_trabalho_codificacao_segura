@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { categoriesService } from "../../services/categoriesService";
+import { useRegisterModal } from "../../hooks/useRegisterModal";
 import Notification from "../../components/Notification";
 import "./index.css";
 
@@ -12,6 +13,8 @@ function Categories() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
+
+  useRegisterModal("categories-form-modal", isModalOpen);
 
   const [notification, setNotification] = useState(() => {
     const flashMessage = sessionStorage.getItem("flashMessage");

@@ -3,6 +3,13 @@
     min-height: 100%;
 }
 
+#total-saldo {
+    grid-area: total-saldo;
+    padding: 24px 20px;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
 #total-despesas {
     grid-area: total-despesas;
     padding: 24px 20px;
@@ -29,10 +36,10 @@
 .container .dashboard {
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-areas:
-        "total-despesas qtde-despesas"
-        "summary summary";
+        "total-saldo total-despesas qtde-despesas"
+        "summary summary summary";
     gap: 20px;
     align-items: stretch;
 }
@@ -50,4 +57,23 @@
     padding: 24px 20px;
     font-size: 1.05rem;
     line-height: 1.4;
+}
+
+.card-positive {
+    color: var(--color-success);
+}
+
+.card-negative {
+    color: var(--color-danger);
+}
+
+@media (max-width: 900px) {
+    .container .dashboard {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "total-saldo"
+            "total-despesas"
+            "qtde-despesas"
+            "summary";
+    }
 }

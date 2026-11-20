@@ -15,6 +15,7 @@ const sequelize = require('./models/database.js');
 require('./models/associations');
 
 const ExpenseRouter = require('./routes/expense.js');
+const IncomeRouter = require('./routes/income.js');
 const UserRouter = require('./routes/user.js');
 const CategoryRouter = require('./routes/category.js');
 
@@ -39,6 +40,7 @@ app.use(express.json());
 
 app.use('/api', csrfMiddleware);
 app.use('/api', ExpenseRouter);
+app.use('/api', IncomeRouter);
 app.use('/api', UserRouter);
 app.use('/api', CategoryRouter);
 

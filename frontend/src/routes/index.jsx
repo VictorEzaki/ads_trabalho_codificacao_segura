@@ -4,6 +4,7 @@ import PrivateRoute from './privateRoute'
 import Login from './../pages/Auth/Login'
 import Register from './../pages/Auth/Register'
 import Dashboard from './../pages/Dashboard'
+import Incomes from './../pages/Incomes'
 import Expenses from './../pages/Expenses'
 import Categories from './../pages/Categories'
 import MainLayout from './../layouts/MainLayout'
@@ -17,6 +18,11 @@ function AppRoutes() {
                 <Route path='/dashboard' element={
                     <PrivateRoute>
                         <Dashboard />
+                    </PrivateRoute>
+                } />
+                <Route path='/incomes' element={
+                    <PrivateRoute>
+                        <Incomes />
                     </PrivateRoute>
                 } />
                 <Route path='/expenses' element={

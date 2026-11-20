@@ -10,7 +10,7 @@ class ExpenseController {
         return expenses;
     }
     
-    async getById(id) {
+    async getById(id, userId) {
         if (!id) {
             throw new HttpError(400, 'ID não informado.');
         }
@@ -20,7 +20,7 @@ class ExpenseController {
         }
         
         const expense = await ExpenseModel.getById(id); 
-        if (!expense) {
+        if (!expense || Number(expense.userId) !== Number(userId)) {
             throw new HttpError(404, 'Despesa não encontrada.');
         }
         
@@ -160,8 +160,8 @@ class ExpenseController {
         return expense.receiptPath;
     }
 
-    async delete(id) {
-        // ID é obrigatório para edição
+    async delete(id, userId) {
+        // ID é obrigatório para exclusão
         if (!id) {
             throw new HttpError(400, 'ID é obrigatório.');
         }
@@ -172,11 +172,12 @@ class ExpenseController {
         }
         
         const expense = await ExpenseModel.getById(Number(id));
-        if (!expense) {
+        if (!expense || Number(expense.userId) !== Number(userId)) {
             throw new HttpError(404, 'Despesa não encontrada.');
         }
         
-        return ExpenseModel.delete(Number(id));
+        await ExpenseModel.delete(Number(id));
+        return expense.receiptPath || null;
     }
     
     async getTotalExpenses(userId) {

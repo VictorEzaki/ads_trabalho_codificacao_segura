@@ -14,8 +14,16 @@ function SummaryCategory() {
         console.error(error);
       }
     }
-    
+
+    function handleFinanceUpdated(event) {
+      if (!event.detail?.kind || event.detail.kind === "expense") {
+        loadExpenses();
+      }
+    }
+
     loadExpenses();
+    window.addEventListener("finance:updated", handleFinanceUpdated);
+    return () => window.removeEventListener("finance:updated", handleFinanceUpdated);
   }, []);
   
   function generateColors(count) {

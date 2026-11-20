@@ -1,0 +1,106 @@
+.shared-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.shared-modal-card {
+  width: min(92vw, 480px);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.2);
+}
+
+.shared-modal-card h2 {
+  margin-top: 0;
+  color: var(--color-primary);
+}
+
+.shared-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.shared-modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.shared-modal-form input,
+.shared-modal-form select {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.shared-modal-form .receipt-upload-label input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  font-weight: 400;
+}
+
+.shared-modal-form .receipt-upload-label small {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.shared-modal-form .receipt-upload-label .receipt-selected {
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+
+.shared-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.shared-modal-actions .primary-button,
+.shared-modal-actions .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 10px 16px;
+  transition: 0.2s ease;
+}
+
+.shared-modal-actions .primary-button {
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.shared-modal-actions .primary-button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.shared-modal-actions .secondary-button {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.shared-modal-actions button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
