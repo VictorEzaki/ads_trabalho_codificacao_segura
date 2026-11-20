@@ -1,0 +1,24 @@
+.incomes-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.income-receipt-image-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.income-receipt-preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}

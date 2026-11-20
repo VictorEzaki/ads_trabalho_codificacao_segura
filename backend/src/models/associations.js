@@ -1,10 +1,12 @@
 const CategoryModel = require('./category');
 const ExpenseModel = require('./expense');
+const IncomeModel = require('./income');
 const UserModel = require('./user');
 const RefreshTokenModel = require('./refreshToken');
 
 const Category = CategoryModel.Category;
 const Expense = ExpenseModel.Expense;
+const Income = IncomeModel.Income;
 const User = UserModel.User;
 const RefreshToken = RefreshTokenModel.RefreshToken;
 
@@ -30,6 +32,18 @@ User.hasMany(Expense, {
 Expense.belongsTo(User, {
     foreignKey: 'userId',
     as: 'users'
+});
+
+
+// Usuário e receita
+User.hasMany(Income, {
+    foreignKey: 'userId',
+    as: 'incomes'
+});
+
+Income.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'
 });
 
 

@@ -1,30 +1,23 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faPlus, faTrash, faEye, faDownload, faFilePdf, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { expenseService } from "../../services/expenseService";
 import { categoriesService } from "../../services/categoriesService";
-import { AuthContext } from "../../contexts/AuthContext";
+import { ModalContext } from "../../contexts/modalContextInstance";
+import { useRegisterModal } from "../../hooks/useRegisterModal";
+import ExpenseModal from "../../components/ExpenseModal";
 import Notification from "../../components/Notification";
 import "./index.css";
 
 function Expenses() {
-  const { user } = useContext(AuthContext);
+  const { notifyDataChanged } = useContext(ModalContext);
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [receiptFile, setReceiptFile] = useState(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState("");
-  const currentUserId = Number(user?.id || 0);
-  const [formData, setFormData] = useState({
-    description: "",
-    amount: "",
-    date: "",
-    status: "PENDENTE",
-    categoryId: "",
-  });
 
   const [formFilter, setFormFilter] = useState({
     dateInicial: "",
@@ -67,12 +60,10 @@ function Expenses() {
     };
   });
 
-  useEffect(() => {
-    loadItems();
-    loadCategories();
-  }, [notification]);
+  useRegisterModal("expenses-form-modal", isModalOpen);
+  useRegisterModal("expenses-receipt-preview", Boolean(receiptPreviewUrl));
 
-  async function loadItems(params = {}) {
+  const loadItems = useCallback(async (params = {}) => {
     setLoading(true);
 
     try {
@@ -83,79 +74,65 @@ function Expenses() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function loadCategories() {
-    try {
-      const data = await categoriesService.getAll();
-      setCategories(data || []);
-    } catch (error) {
-      console.error(error);
+  useEffect(() => {
+    let active = true;
+
+    async function loadInitial() {
+      try {
+        const [expensesData, categoriesData] = await Promise.all([
+          expenseService.getAll(),
+          categoriesService.getAll(),
+        ]);
+        if (active) {
+          setItems(expensesData || []);
+          setCategories(categoriesData || []);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     }
-  }
+
+    function handleFinanceUpdated(event) {
+      if (!event.detail?.kind || event.detail.kind === "expense") {
+        loadItems();
+      }
+    }
+
+    loadInitial();
+    window.addEventListener("finance:updated", handleFinanceUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener("finance:updated", handleFinanceUpdated);
+    };
+  }, [loadItems]);
+
+  useEffect(() => {
+    return () => {
+      if (receiptPreviewUrl) {
+        URL.revokeObjectURL(receiptPreviewUrl);
+      }
+    };
+  }, [receiptPreviewUrl]);
 
   function openCreateModal() {
     setEditingItem(null);
-    setFormData({
-      description: "",
-      amount: "",
-      date: "",
-      status: "PENDENTE",
-      categoryId: "",
-    });
-    setReceiptFile(null);
     setIsModalOpen(true);
   }
 
   function openEditModal(item) {
     setEditingItem(item);
-    setFormData({
-      description: item.description || "",
-      amount: item.amount || "",
-      date: item.date || "",
-      status: item.status || "PENDENTE",
-      categoryId: item.categoryId || "",
-    });
-    setReceiptFile(null);
     setIsModalOpen(true);
   }
 
   function closeModal() {
     setIsModalOpen(false);
     setEditingItem(null);
-    setFormData({
-      description: "",
-      amount: "",
-      date: "",
-      status: "PENDENTE",
-      categoryId: "",
-    });
-    setReceiptFile(null);
-  }
-
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  }
-
-  function handleReceiptChange(event) {
-    const file = event.target.files?.[0] || null;
-
-    if (file && file.size > 10 * 1024 * 1024) {
-      setReceiptFile(null);
-      event.target.value = "";
-      setNotification({ message: "O PDF deve ter no máximo 10 MB.", type: "error" });
-      return;
-    }
-
-    if (file && (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf"))) {
-      setReceiptFile(null);
-      event.target.value = "";
-      setNotification({ message: "Selecione um arquivo PDF.", type: "error" });
-      return;
-    }
-
-    setReceiptFile(file);
   }
 
   function handleChangeFilter(event) {
@@ -163,46 +140,14 @@ function Expenses() {
     setFormFilter((prev) => ({ ...prev, [name]: value }));
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
+  async function handleModalSuccess(message) {
+    await loadItems();
+    notifyDataChanged("expense");
+    setNotification({ message, type: "success" });
+  }
 
-    try {
-      const payload = {
-        description: formData.description,
-        amount: Number(formData.amount),
-        date: formData.date,
-        status: formData.status,
-        categoryId: Number(formData.categoryId),
-        userId: currentUserId,
-      };
-
-      const multipartData = new FormData();
-      Object.entries(payload).forEach(([key, value]) => {
-        multipartData.append(key, value);
-      });
-      if (receiptFile) multipartData.append("receipt", receiptFile);
-
-      if (editingItem) {
-        await expenseService.update(multipartData, editingItem.id);
-      } else {
-        await expenseService.create(multipartData);
-      }
-
-      await loadItems();
-      closeModal();
-
-      setNotification({
-        message: editingItem
-          ? "Despesa atualizada com sucesso!"
-          : "Despesa cadastrada com sucesso!",
-        type: "success",
-      });
-    } catch (error) {
-      setNotification({
-        message: error.response?.data?.message || error.message || "Erro ao salvar despesa",
-        type: "error",
-      });
-    }
+  function handleModalError(message) {
+    setNotification({ message, type: "error" });
   }
 
   async function handleViewReceipt(id) {
@@ -247,6 +192,7 @@ function Expenses() {
     try {
       await expenseService.delete(id);
       await loadItems();
+      notifyDataChanged("expense");
       setNotification({ message: "Despesa excluída com sucesso!", type: "success" });
     } catch (error) {
       setNotification({
@@ -270,11 +216,11 @@ function Expenses() {
         dateFinal: formFilter.dateFinal,
         valueMin: formFilter.valueMin,
         valueMax: formFilter.valueMax,
-      }
+      };
 
-      await loadItems(params)
+      await loadItems(params);
     } catch (error) {
-
+      console.error(error);
     }
   }
 
@@ -424,91 +370,14 @@ function Expenses() {
         </table>
       </div>
 
-      {isModalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
-            <h2>{editingItem ? "Editar despesa" : "Nova despesa"}</h2>
-            <form onSubmit={handleSubmit} className="modal-form">
-              <label>
-                Descrição
-                <input
-                  type="text"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label>
-                Valor
-                <input
-                  type="number"
-                  step="0.01"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Data
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Status
-                <select name="status" value={formData.status} onChange={handleChange}>
-                  <option value="PENDENTE">PENDENTE</option>
-                  <option value="PAGA">PAGA</option>
-                </select>
-              </label>
-
-              <label className="receipt-upload-label">
-                  Anexo (PDF, opcional)
-                  <input
-                    type="file"
-                    name="receipt"
-                    accept=".pdf,application/pdf"
-                    onChange={handleReceiptChange}
-                  />
-                  <small>Somente PDF • tamanho máximo: 10 MB</small>
-                  {receiptFile && <small className="receipt-selected">Novo arquivo: {receiptFile.name}</small>}
-                  {editingItem?.receiptPath && !receiptFile && (
-                    <small className="receipt-selected">Já existe um PDF anexado. Selecione outro arquivo para substituí-lo.</small>
-                  )}
-                </label>
-
-              <label>
-                Categoria
-                <select name="categoryId" value={formData.categoryId} onChange={handleChange} required>
-                  <option value="">Selecione uma categoria</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="modal-actions">
-                <button type="button" className="secondary-button" onClick={closeModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className="primary-button">
-                  Salvar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ExpenseModal
+        isOpen={isModalOpen}
+        editingItem={editingItem}
+        categories={categories}
+        onClose={closeModal}
+        onSuccess={handleModalSuccess}
+        onError={handleModalError}
+      />
 
       {receiptPreviewUrl && (
         <div className="modal-overlay receipt-preview-overlay" onClick={closeReceiptPreview}>

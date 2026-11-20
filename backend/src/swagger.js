@@ -67,6 +67,26 @@ const swaggerDefinition = {
           userId: { type: 'integer', example: 1 },
         },
       },
+
+      Income: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 1, readOnly: true },
+          description: { type: 'string', example: 'Salário mensal' },
+          amount: { type: 'number', example: 4500.00 },
+          date: { type: 'string', format: 'date', example: '2026-11-05' },
+          receiptPath: { type: 'string', nullable: true, example: 'uuid.pdf' },
+        },
+      },
+
+      BalanceSummary: {
+        type: 'object',
+        properties: {
+          totalIncomes: { type: 'number', example: 4500.00 },
+          totalExpenses: { type: 'number', example: 1850.50 },
+          balance: { type: 'number', example: 2649.50 },
+        },
+      },
     },
     examples: {
       // Users

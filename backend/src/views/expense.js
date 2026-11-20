@@ -26,7 +26,7 @@ class ExpenseView {
         try {
             const { id } = req.params;
             
-            const expense = await ExpenseController.getById(Number(id));
+            const expense = await ExpenseController.getById(Number(id), req.user.id);
             
             res.status(200).json(expense);
         } catch (error) {
@@ -121,7 +121,10 @@ class ExpenseView {
         try {
             const { id } = req.params;
             
-            await ExpenseController.delete(Number(id));
+            const deletedReceiptPath = await ExpenseController.delete(Number(id), req.user.id);
+            if (deletedReceiptPath) {
+                await fs.unlink(path.join(uploadDirectory, path.basename(deletedReceiptPath))).catch(() => {});
+            }
             
             res.status(204).send();
         } catch (error) {

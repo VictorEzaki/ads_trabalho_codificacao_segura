@@ -1,0 +1,59 @@
+.quick-action-fab-group {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.quick-action-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 168px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  color: var(--color-surface);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.quick-action-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.24);
+}
+
+.quick-action-fab:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.quick-action-fab.income {
+  background: var(--color-success);
+}
+
+.quick-action-fab.expense {
+  background: var(--color-danger);
+}
+
+@media (max-width: 700px) {
+  .quick-action-fab-group {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .quick-action-fab {
+    min-width: 150px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}
