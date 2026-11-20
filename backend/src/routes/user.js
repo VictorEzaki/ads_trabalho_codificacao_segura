@@ -105,12 +105,62 @@ router.post("/auth/login", UserView.login);
 
 /**
  * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Renovar sessão (Access e Refresh Token via cookies com rotação)
+ *     tags: [Auth]
+ *     security:
+ *       - csrfToken: []
+ *     responses:
+ *       200:
+ *         description: Sessão renovada com sucesso (novos cookies definidos)
+ *       401:
+ *         description: Refresh token ausente, inválido, expirado ou reutilizado
+ *       403:
+ *         description: Token CSRF inválido ou ausente
+ */
+router.post("/auth/refresh", UserView.refresh);
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Encerrar sessão revogando o refresh token e limpando os cookies
+ *     tags: [Auth]
+ *     security:
+ *       - csrfToken: []
+ *     responses:
+ *       204:
+ *         description: Logout realizado com sucesso
+ *       403:
+ *         description: Token CSRF inválido ou ausente
+ */
+router.post("/auth/logout", UserView.logout);
+
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Retorna os dados do usuário autenticado via cookie HttpOnly
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Dados do usuário autenticado
+ *       401:
+ *         description: Não autenticado
+ */
+router.get("/auth/me", authMiddleware, UserView.me);
+
+/**
+ * @swagger
  * /users:
  *   get:
  *     summary: Retorna todos os usuários
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Objeto de usuário
@@ -138,7 +188,7 @@ router.get("/users", authMiddleware, UserView.getAll);
  *     summary: Buscar usuário por ID
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -173,7 +223,7 @@ router.get("/users/:id", authMiddleware, UserView.getById);
  *     summary: Editar um usuário
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -251,7 +301,7 @@ router.put("/users/:id", authMiddleware, UserView.update);
  *     summary: Deletar um usuário
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id

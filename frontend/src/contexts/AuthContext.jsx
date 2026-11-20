@@ -1,43 +1,72 @@
-import { createContext, useState, useEffect } from "react";
-import api from './../services/api'
+import { createContext, useState, useEffect, useCallback } from "react";
+import { authService } from "../services/authService";
 
-export const AuthContext = createContext()
+export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null)
-    const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(()=>{
-        const token = localStorage.getItem('token')
-        const savedUser = localStorage.getItem('user')
+  useEffect(() => {
+    let active = true;
 
-        if (token && savedUser){
-            setUser(JSON.parse(savedUser))
+    async function loadSession() {
+      try {
+        const data = await authService.me();
+        if (active) {
+          setUser(data.user || null);
         }
-
-        setLoading(false)
-    }, [])
-
-    async function login(email, password){
-        const response = await api.post('/auth/login', { email, password })
-        const { data } = response.data
-        const { token, user } = data
-
-        localStorage.setItem('token', token)
-        localStorage.setItem('user', JSON.stringify(user))
-
-        setUser(user)
+      } catch {
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     }
 
-    function logout(){
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        setUser(null)
+    function handleUnauthorized() {
+      setUser(null);
     }
 
-    return (
-        <AuthContext.Provider value={{user, login, logout, loading, authenticated:!!user}}>
-            {children}
-        </AuthContext.Provider>
-    )
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    loadSession();
+
+    return () => {
+      active = false;
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    };
+  }, []);
+
+  const login = useCallback(async (email, password) => {
+    const data = await authService.login({ email, password });
+    setUser(data.user || null);
+    return data.user;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Mesmo que o backend retorne erro (ex: sessão já expirada), limpa o estado local
+    } finally {
+      setUser(null);
+    }
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        loading,
+        authenticated: Boolean(user),
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }

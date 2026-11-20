@@ -1,25 +1,21 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { expenseService } from "../../services/expenseService";
 import { categoriesService } from "../../services/categoriesService";
+import { AuthContext } from "../../contexts/AuthContext";
 import Notification from "../../components/Notification";
 import "./index.css";
 
 function Expenses() {
+  const { user } = useContext(AuthContext);
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [currentUserId] = useState(() => {
-    try {
-      return Number(JSON.parse(localStorage.getItem("user") || "{}").id || 0);
-    } catch {
-      return 0;
-    }
-  });
+  const currentUserId = Number(user?.id || 0);
   const [formData, setFormData] = useState({
     description: "",
     amount: "",

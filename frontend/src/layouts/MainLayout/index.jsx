@@ -12,9 +12,9 @@ function MainLayout() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
+  async function handleLogout() {
+    await logout();
+    navigate("/", { replace: true });
   }
 
   function toggleSidebar() {
