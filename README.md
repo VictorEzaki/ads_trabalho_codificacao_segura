@@ -1,54 +1,60 @@
-# 💰 Expense API - Sistema de Gestão de Despesas
+# FinanceApp - Sistema de Controle Financeiro Pessoal
 
-## 1.1. Descrição do Projeto
+## Descrição do Projeto
 
-### Objetivo da API
+O **FinanceApp** é uma aplicação web para controle financeiro pessoal, evoluída na disciplina de **Codificação Segura**. O sistema permite o gerenciamento completo de despesas, receitas, categorias e acompanhamento de saldo e indicadores em um painel administrativo.
 
-A **Expense API** é uma API RESTful desenvolvida para controle de despesas pessoais.
-O sistema permite cadastrar usuários, autenticar login com JWT, criar categorias, registrar despesas, aplicar filtros nas listagens e consultar estatísticas financeiras por usuário e categoria.
+Principais funcionalidades atuais:
 
-A aplicação foi construída seguindo o padrão **MVC**, separando responsabilidades entre rotas, controllers, views, models, middlewares e configurações.
-
----
-
-## 1.2. Tecnologias Utilizadas
-
-- **Node.js**: Ambiente de execução JavaScript.
-- **Express.js**: Framework para criação da API REST.
-- **Sequelize**: ORM para comunicação com o banco de dados.
-- **MySQL**: Banco de dados relacional utilizado pela aplicação.
-- **JWT**: Autenticação baseada em token.
-- **bcrypt**: Criptografia de senhas.
-- **dotenv**: Gerenciamento de variáveis de ambiente.
-- **CORS**: Permite requisições entre diferentes origens.
-- **Swagger**: Documentação interativa da API.
-- **Sequelize CLI**: Criação de migrations e seeders.
+- **Autenticação e Sessão Segura**: Cadastro e login de usuários com hash de senha (`bcrypt`), tokens JWT (`accessToken` e `refreshToken` com rotação e revogação) armazenados em cookies `HttpOnly` e proteção contra CSRF via Double Submit Cookie (`X-CSRF-Token`).
+- **Despesas**: Cadastro, edição, exclusão, filtros por texto, período e faixa de valor, além de anexo opcional de cupom fiscal em PDF (validado por assinatura binária).
+- **Receitas**: Cadastro, edição, exclusão e histórico de entradas financeiras, com anexo opcional de comprovante em PDF ou PNG (validado por extensão, MIME type e assinatura binária).
+- **Categorias**: Cadastro, edição, listagem e remoção de categorias de despesas.
+- **Dashboard e Atalhos Rápidos**: Exibição de saldo total (receitas menos despesas), total e quantidade de despesas, gráfico de gastos por categoria e botões globais de atalho para lançamento rápido de receitas e despesas.
 
 ---
 
-## 1.3. Como Executar o Projeto
+## Tecnologias Utilizadas
+
+### Backend
+- **Node.js** e **Express 5**: Servidor HTTP e API RESTful organizada em camadas (`routes`, `views`, `controllers`, `models`).
+- **Sequelize**, **Sequelize CLI** e **MySQL (`mysql2`)**: Modelagem, migrations, seeders e consultas parametrizadas ao banco relacional.
+- **jsonwebtoken**, **bcrypt** e **cookie-parser**: Autenticação via cookies `HttpOnly`, rotação de refresh tokens e proteção CSRF.
+- **Multer**: Recebimento de uploads de comprovantes (`PDF` e `PNG`) com limite de tamanho e validação de assinatura.
+- **Swagger (`swagger-jsdoc` e `swagger-ui-express`)**: Documentação interativa da API.
+- **dotenv** e **cors**: Configuração de ambiente e controle de origens permitidas.
+
+### Frontend
+- **React 19** e **Vite**: Interface SPA responsiva.
+- **React Router DOM**: Roteamento público e rotas autenticadas protegidas.
+- **Axios**: Comunicação com a API com envio automático de cookies, token CSRF e renovação automática de sessão.
+- **ApexCharts (`react-apexcharts`)** e **FontAwesome**: Gráficos e ícones da interface.
+
+---
+
+## Como Executar o Projeto
 
 ### Pré-requisitos
-
-Certifique-se de ter instalado:
-
-- Node.js
-- MySQL
+- Node.js (v20 ou superior recomendado)
 - npm
+- MySQL em execução
 
-### 1. Instalar as dependências
+### 1. Configurar e iniciar o Backend
+
+Acesse a pasta do backend e instale as dependências:
 
 ```bash
+cd backend
 npm install
 ```
 
-### 2. Configurar variáveis de ambiente
-
-Crie um arquivo `.env` na raiz do backend com base no `.env.example`.
-
-Exemplo:
+Crie o arquivo `.env` na pasta `backend/` com base em `backend/.env.example`:
 
 ```env
+PORT=3001
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+
 DB_NAME=expense
 DB_USER=root
 DB_PASSWORD=sua_senha
@@ -56,519 +62,67 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_DIALECT=mysql
 
-JWT_SECRET=sua_chave_secreta
-JWT_EXPIRES_IN=1d
+JWT_ACCESS_SECRET=sua_chave_access_jwt
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=sua_chave_refresh_jwt
+JWT_REFRESH_EXPIRES_IN=7d
+
+COOKIE_ACCESS_MAX_AGE_MS=900000
+COOKIE_REFRESH_MAX_AGE_MS=604800000
+COOKIE_SAME_SITE=lax
 ```
 
-### 3. Criar o banco de dados
+Crie o banco de dados, execute as migrations e (opcionalmente) os seeders:
 
 ```bash
 npm run db:create
-```
-
-### 4. Executar as migrations
-
-```bash
 npm run db:migrate
-```
-
-### 5. Executar os seeders
-
-```bash
 npm run db:seed
 ```
 
-### 6. Iniciar o servidor
+Inicie o servidor backend:
 
 ```bash
 npm run dev
 ```
 
-O servidor será iniciado em:
-
-```
-http://localhost:3000
-```
-
----
-
-## 1.4. Documentação Swagger
-
-A API possui documentação interativa com Swagger.
-Após iniciar o servidor, acesse:
-
-```
-http://localhost:3000/api-docs
-```
-
----
-
-## 1.5. Modelo de Dados
-
-### Usuário
-
-Representa um usuário cadastrado no sistema.
-
-Campos:
-
-- `id`: Identificador único.
-- `name`: Nome do usuário.
-- `email`: Email do usuário.
-- `password`: Senha criptografada.
-- `createdAt`: Data de criação.
-- `updatedAt`: Data de atualização.
-
-### Categoria
-
-Representa uma categoria de despesa.
-
-Campos:
-
-- `id`: Identificador único.
-- `name`: Nome da categoria.
-- `description`: Descrição da categoria.
-- `createdAt`: Data de criação.
-- `updatedAt`: Data de atualização.
-
-### Despesa
-
-Representa uma despesa cadastrada no sistema.
-
-Campos:
-
-- `id`: Identificador único.
-- `description`: Descrição da despesa.
-- `amount`: Valor da despesa.
-- `date`: Data da despesa no formato `YYYY-MM-DD`.
-- `status`: Status da despesa, podendo ser `PENDENTE` ou `PAGA`.
-- `categoryId`: ID da categoria relacionada.
-- `userId`: ID do usuário relacionado.
-
----
-
-## 1.6. Relacionamentos
-
-A API possui os seguintes relacionamentos entre as entidades:
-
-- Um usuário possui várias despesas.
-- Uma categoria possui várias despesas.
-- Uma despesa pertence a um usuário.
-- Uma despesa pertence a uma categoria.
-
----
-
-## 1.7. Autenticação
-
-A autenticação da API é feita com JWT.
-Após realizar login, o usuário recebe um token que deve ser enviado no header das rotas protegidas.
-
-Exemplo:
-
-```
-Authorization: Bearer seu_token_jwt
-```
-
----
-
-## 1.8. Rotas da API
-
-Todas as rotas utilizam o prefixo:
-
-```
-/api
-```
-
----
-
-## 1.9. Rotas de Autenticação e Usuário
-
-### Cadastro de Usuário
-
-```
-POST /api/users
-```
-
-Payload:
-
-```json
-{
-  "name": "Victor",
-  "email": "victor@email.com",
-  "password": "123456"
-}
-```
-
-Resposta:
-
-```json
-{
-  "id": 1,
-  "name": "Victor",
-  "email": "victor@email.com"
-}
-```
-
-### Login
-
-```
-POST /api/auth/login
-```
-
-Payload:
-
-```json
-{
-  "email": "victor@email.com",
-  "password": "123456"
-}
-```
-
-Resposta:
-
-```json
-{
-  "token": "token_jwt",
-  "user": {
-    "id": 1,
-    "name": "Victor",
-    "email": "victor@email.com"
-  }
-}
-```
-
-### Listar Usuários
-
-```
-GET /api/users
-```
-
-### Buscar Usuário por ID
-
-```
-GET /api/users/:id
-```
-
-### Atualizar Usuário
-
-```
-PUT /api/users/:id
-```
-
-Payload:
-
-```json
-{
-  "name": "Victor Atualizado",
-  "email": "victor@email.com",
-  "password": "123456"
-}
-```
-
-### Excluir Usuário
-
-```
-DELETE /api/users/:id
-```
-
----
-
-## 1.10. Rotas de Categorias
-
-### Listar Categorias
-
-```
-GET /api/categories
-```
-
-### Buscar Categoria por ID
-
-```
-GET /api/categories/:id
-```
-
-### Criar Categoria
-
-```
-POST /api/categories
-```
-
-Payload:
-
-```json
-{
-  "name": "Alimentação",
-  "description": "Gastos com comida, mercado e restaurantes"
-}
-```
-
-### Atualizar Categoria
-
-```
-PUT /api/categories/:id
-```
-
-Payload:
-
-```json
-{
-  "name": "Transporte",
-  "description": "Gastos com Uber, ônibus e combustível"
-}
-```
-
-### Excluir Categoria
-
-```
-DELETE /api/categories/:id
-```
-
----
-
-## 1.11. Rotas de Despesas
-
-### Listar Despesas
-
-```
-GET /api/expenses
-```
-
-### Buscar Despesa por ID
-
-```
-GET /api/expenses/:id
-```
-
-### Criar Despesa
-
-```
-POST /api/expenses
-```
-
-Payload:
-
-```json
-{
-  "description": "Compra no supermercado",
-  "amount": 250.75,
-  "date": "2026-06-20",
-  "status": "PAGA",
-  "categoryId": 1,
-  "userId": 1
-}
-```
-
-### Atualizar Despesa
-
-```
-PUT /api/expenses/:id
-```
-
-Payload:
-
-```json
-{
-  "description": "Conta de luz",
-  "amount": 180.5,
-  "date": "2026-06-22",
-  "status": "PENDENTE",
-  "categoryId": 2,
-  "userId": 1
-}
-```
-
-### Excluir Despesa
-
-```
-DELETE /api/expenses/:id
-```
-
----
-
-## 1.12. Filtros de Despesas
-
-A listagem de despesas permite filtros por categoria, status, período, valor mínimo e valor máximo.
-
-Endpoint:
-
-```
-GET /api/expenses
-```
-
-Exemplos:
-
-```
-GET /api/expenses?categoryId=1
-GET /api/expenses?status=PAGA
-GET /api/expenses?dateIni=2026-06-01&dateFim=2026-06-30
-GET /api/expenses?vlMin=100&vlMax=500
-```
-
-Exemplo combinando filtros:
-
-```
-GET /api/expenses?categoryId=1&status=PAGA&dateIni=2026-06-01&dateFim=2026-06-30&vlMin=50&vlMax=1000
-```
-
----
-
-## 1.13. Dashboard e Estatísticas
-
-### Total de Gastos
-
-```
-GET /api/dashboard/total-expenses
-```
-
-Resposta:
-
-```json
-{
-  "total": 3500.5
-}
-```
-
-### Quantidade de Despesas
-
-```
-GET /api/dashboard/expenses-count
-```
-
-Resposta:
-
-```json
-{
-  "quantidade": 45
-}
-```
-
-### Gastos por Categoria
-
-```
-GET /api/dashboard/expenses-by-category
-```
-
-Resposta:
-
-```json
-[
-  {
-    "categoria": "Alimentação",
-    "total": 1200
-  },
-  {
-    "categoria": "Transporte",
-    "total": 800
-  }
-]
-```
-
----
-
-## 1.14. Recursos Implementados
-
-- Cadastro de usuários.
-- Login com JWT.
-- Senhas criptografadas com bcrypt.
-- Middleware de autenticação.
-- CRUD de usuários.
-- CRUD de categorias.
-- CRUD de despesas.
-- Relacionamentos com Sequelize.
-- Migrations.
-- Seeders.
-- Filtros por categoria, status, período, valor mínimo e valor máximo.
-- Dashboard com total de gastos.
-- Dashboard com quantidade de despesas.
-- Dashboard com gastos por categoria.
-- Tratamento global de erros.
-- Documentação com Swagger.
-- Collection Postman para testes.
-
----
-
-## 1.15. Segurança
-
-A API possui os seguintes recursos de segurança:
-
-- Autenticação com JWT.
-- Criptografia de senha com bcrypt.
-- Proteção de rotas privadas com middleware de autenticação.
-- Variáveis sensíveis armazenadas em `.env`.
-- Tratamento centralizado de erros.
-
----
-
-## 1.16. Scripts Disponíveis
-
-Criar banco de dados:
-
-```bash
-npm run db:create
-```
-
-Executar migrations:
-
-```bash
-npm run db:migrate
-```
-
-Executar seeders:
-
-```bash
-npm run db:seed
-```
-
-Iniciar servidor:
-
-```bash
-npm run dev
-```
-
-Iniciar servidor com nodemon:
+Ou em modo watch com nodemon:
 
 ```bash
 npm run watch
 ```
 
----
+O backend estará disponível em `http://localhost:3001`.
 
-## 1.17. Collection Postman
+### 2. Configurar e iniciar o Frontend
 
-A collection do Postman está disponível no repositório para facilitar os testes das rotas da API.
+Em outro terminal, acesse a pasta do frontend e instale as dependências:
 
-Arquivo:
-
+```bash
+cd frontend
+npm install
 ```
-expense_api.postman.json
+
+Crie o arquivo `.env` na pasta `frontend/` com base em `frontend/.env.example`:
+
+```env
+VITE_BACKEND_URL=http://localhost:3001
 ```
 
----
+Inicie a aplicação frontend:
 
-## 1.18. Estrutura do Projeto
+```bash
+npm run dev
+```
 
-```
-src/
-├── config/
-├── controllers/
-├── errors/
-├── middleware/
-├── migrations/
-├── models/
-├── routes/
-├── seeders/
-├── views/
-├── swagger.js
-└── app.js
-```
+O frontend estará disponível em `http://localhost:5173`.
 
 ---
 
-## 1.19. Observações
+## Documentação Swagger
 
-Antes de testar rotas protegidas, faça login e copie o token JWT retornado.
+Com o servidor backend em execução, acesse a documentação interativa da API no navegador:
 
-Envie o token no header da requisição:
-
-```
-Authorization: Bearer seu_token_jwt
+```text
+http://localhost:3001/api-docs
 ```
