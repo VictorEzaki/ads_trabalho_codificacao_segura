@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare, faPlus, faTrash, faEye, faDownload, faFilePdf, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { expenseService } from "../../services/expenseService";
 import { categoriesService } from "../../services/categoriesService";
 import { AuthContext } from "../../contexts/AuthContext";
@@ -15,6 +15,8 @@ function Expenses() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState("");
   const currentUserId = Number(user?.id || 0);
   const [formData, setFormData] = useState({
     description: "",
@@ -101,6 +103,7 @@ function Expenses() {
       status: "PENDENTE",
       categoryId: "",
     });
+    setReceiptFile(null);
     setIsModalOpen(true);
   }
 
@@ -113,6 +116,7 @@ function Expenses() {
       status: item.status || "PENDENTE",
       categoryId: item.categoryId || "",
     });
+    setReceiptFile(null);
     setIsModalOpen(true);
   }
 
@@ -126,11 +130,32 @@ function Expenses() {
       status: "PENDENTE",
       categoryId: "",
     });
+    setReceiptFile(null);
   }
 
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleReceiptChange(event) {
+    const file = event.target.files?.[0] || null;
+
+    if (file && file.size > 10 * 1024 * 1024) {
+      setReceiptFile(null);
+      event.target.value = "";
+      setNotification({ message: "O PDF deve ter no máximo 10 MB.", type: "error" });
+      return;
+    }
+
+    if (file && (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf"))) {
+      setReceiptFile(null);
+      event.target.value = "";
+      setNotification({ message: "Selecione um arquivo PDF.", type: "error" });
+      return;
+    }
+
+    setReceiptFile(file);
   }
 
   function handleChangeFilter(event) {
@@ -151,10 +176,16 @@ function Expenses() {
         userId: currentUserId,
       };
 
+      const multipartData = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        multipartData.append(key, value);
+      });
+      if (receiptFile) multipartData.append("receipt", receiptFile);
+
       if (editingItem) {
-        await expenseService.update(payload, editingItem.id);
+        await expenseService.update(multipartData, editingItem.id);
       } else {
-        await expenseService.create(payload);
+        await expenseService.create(multipartData);
       }
 
       await loadItems();
@@ -172,6 +203,44 @@ function Expenses() {
         type: "error",
       });
     }
+  }
+
+  async function handleViewReceipt(id) {
+    try {
+      const pdfBlob = await expenseService.getReceipt(id);
+      if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
+      const url = URL.createObjectURL(new Blob([pdfBlob], { type: "application/pdf" }));
+      setReceiptPreviewUrl(url);
+    } catch (error) {
+      setNotification({
+        message: error.response?.data?.message || "Não foi possível abrir o PDF.",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleDownloadReceipt(id) {
+    try {
+      const pdfBlob = await expenseService.getReceipt(id, true);
+      const url = URL.createObjectURL(new Blob([pdfBlob], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `cupom-${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setNotification({
+        message: error.response?.data?.message || "Não foi possível baixar o PDF.",
+        type: "error",
+      });
+    }
+  }
+
+  function closeReceiptPreview() {
+    if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
+    setReceiptPreviewUrl("");
   }
 
   async function handleDelete(id) {
@@ -232,7 +301,7 @@ function Expenses() {
           />
 
           <form className="filter-form" onSubmit={handleSearch}>
-            <span class="filters-group">
+            <span className="filters-group">
               <input
                 type="date"
                 name="dateInicial"
@@ -252,7 +321,7 @@ function Expenses() {
               />
             </span>
 
-            <span class="filters-group">
+            <span className="filters-group">
               <input
                 type="number"
                 name="valueMin"
@@ -297,6 +366,7 @@ function Expenses() {
               <th>Data</th>
               <th>Status</th>
               <th>Categoria</th>
+              <th>Anexos</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -315,6 +385,20 @@ function Expenses() {
                   <td>{item.date}</td>
                   <td>{item.status}</td>
                   <td>{categories.find((category) => category.id === item.categoryId)?.name || item.categoryId}</td>
+                  <td>
+                    {item.receiptPath ? (
+                      <div className="table-actions attachment-actions">
+                        <button type="button" className="icon-button edit" title="Visualizar PDF" onClick={() => handleViewReceipt(item.id)}>
+                          <FontAwesomeIcon icon={faEye} />
+                          <span>Visualizar</span>
+                        </button>
+                        <button type="button" className="icon-button edit" title="Baixar PDF" onClick={() => handleDownloadReceipt(item.id)}>
+                          <FontAwesomeIcon icon={faDownload} />
+                          <span>Baixar</span>
+                        </button>
+                      </div>
+                    ) : <span className="no-attachment">Sem anexo</span>}
+                  </td>
                   <td>
                     <div className="table-actions">
                       <button type="button" className="icon-button edit" onClick={() => openEditModal(item)}>
@@ -386,6 +470,21 @@ function Expenses() {
                 </select>
               </label>
 
+              <label className="receipt-upload-label">
+                  Anexo (PDF, opcional)
+                  <input
+                    type="file"
+                    name="receipt"
+                    accept=".pdf,application/pdf"
+                    onChange={handleReceiptChange}
+                  />
+                  <small>Somente PDF • tamanho máximo: 10 MB</small>
+                  {receiptFile && <small className="receipt-selected">Novo arquivo: {receiptFile.name}</small>}
+                  {editingItem?.receiptPath && !receiptFile && (
+                    <small className="receipt-selected">Já existe um PDF anexado. Selecione outro arquivo para substituí-lo.</small>
+                  )}
+                </label>
+
               <label>
                 Categoria
                 <select name="categoryId" value={formData.categoryId} onChange={handleChange} required>
@@ -407,6 +506,20 @@ function Expenses() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {receiptPreviewUrl && (
+        <div className="modal-overlay receipt-preview-overlay" onClick={closeReceiptPreview}>
+          <div className="receipt-preview-card" onClick={(event) => event.stopPropagation()}>
+            <div className="receipt-preview-header">
+              <h2><FontAwesomeIcon icon={faFilePdf} /> Visualizar anexo</h2>
+              <button type="button" className="icon-button" onClick={closeReceiptPreview} aria-label="Fechar visualização">
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <iframe title="Visualização do cupom fiscal" src={receiptPreviewUrl} className="receipt-preview-frame" />
           </div>
         </div>
       )}

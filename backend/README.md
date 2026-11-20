@@ -572,3 +572,15 @@ Envie o token no header da requisição:
 ```
 Authorization: Bearer seu_token_jwt
 ```
+## Anexos de cupons fiscais
+
+O cadastro de despesas aceita um cupom fiscal em PDF como anexo opcional. O limite é de 10 MB por arquivo. Os PDFs são armazenados em `backend/uploads/cupons/` e o nome do arquivo fica registrado no campo `receiptPath` da despesa.
+
+Para atualizar um banco que já existe, execute a nova migration a partir da pasta `backend`:
+
+```bash
+npm install
+npm run db:migrate
+```
+
+A rota `POST /api/expenses` recebe os campos da despesa e o arquivo opcional no campo multipart `receipt`.

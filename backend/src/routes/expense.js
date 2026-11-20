@@ -4,6 +4,27 @@ const router = express.Router();
 const ExpenseView = require('../views/expense');
 
 const authMiddleware = require('../middlewares/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+
+const uploadDirectory = path.resolve(__dirname, '../../uploads/cupons');
+fs.mkdirSync(uploadDirectory, { recursive: true });
+
+const receiptUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, callback) => callback(null, uploadDirectory),
+        filename: (req, file, callback) => callback(null, `${crypto.randomUUID()}.pdf`)
+    }),
+    fileFilter: (req, file, callback) => {
+        const isPdfExtension = path.extname(file.originalname).toLowerCase() === '.pdf';
+        const isPdfMime = file.mimetype === 'application/pdf';
+        if (isPdfExtension && isPdfMime) return callback(null, true);
+        callback(new Error('Envie somente arquivos PDF.'));
+    },
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 }
+});
 
 /**
  * @swagger
@@ -16,16 +37,16 @@ const authMiddleware = require('../middlewares/auth');
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [amount, date, status, categoryId, userId]
+ *             required: [amount, date, status, categoryId]
  *             properties:
  *               description:
  *                 type: string
  *                 example: Jantar
  *               amount:
- *                 type: double
+ *                 type: number
  *                 example: 150.40
  *               date:
  *                 type: string
@@ -38,9 +59,10 @@ const authMiddleware = require('../middlewares/auth');
  *               categoryId:
  *                 type: integer
  *                 example: 1
- *               userId:
- *                 type: integer
- *                 example: 1
+ *               receipt:
+ *                 type: string
+ *                 format: binary
+ *                 description: Cupom fiscal em PDF (opcional, até 10 MB).
  *     responses:
  *       201:
  *         description: Sucesso
@@ -70,7 +92,7 @@ const authMiddleware = require('../middlewares/auth');
  *       500:
  *         description: Erro ao criar despesa
  */
-router.post("/expenses", authMiddleware, ExpenseView.create);
+router.post("/expenses", authMiddleware, receiptUpload.single("receipt"), ExpenseView.create);
 /**
  * @swagger
  * /expenses:
@@ -147,10 +169,10 @@ router.get("/expenses/:id", authMiddleware, ExpenseView.getById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [amount, date, status, categoryId, userId]
+ *             required: [amount, date, status, categoryId]
  *             properties:
  *               description:
  *                 type: string
@@ -169,9 +191,10 @@ router.get("/expenses/:id", authMiddleware, ExpenseView.getById);
  *               categoryId:
  *                 type: integer
  *                 example: 1
- *               userId:
- *                 type: integer
- *                 example: 1
+ *               receipt:
+ *                 type: string
+ *                 format: binary
+ *                 description: Novo cupom fiscal em PDF (opcional, até 10 MB). Se não enviado, mantém o anexo atual.
  *     responses:
  *       200:
  *         description: Sucesso
@@ -207,7 +230,8 @@ router.get("/expenses/:id", authMiddleware, ExpenseView.getById);
  *       500:
  *         description: Erro interno do servidor
  */
-router.put("/expenses/:id", authMiddleware, ExpenseView.update);
+router.put("/expenses/:id", authMiddleware, receiptUpload.single("receipt"), ExpenseView.update);
+router.get("/expenses/:id/receipt", authMiddleware, ExpenseView.getReceipt);
 /**
  * @swagger
  * /expenses/{id}:
