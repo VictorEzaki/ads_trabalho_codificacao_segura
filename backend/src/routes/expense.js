@@ -33,7 +33,7 @@ const receiptUpload = multer({
  *     summary: Criar despesa
  *     tags: [Expenses]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -100,7 +100,7 @@ router.post("/expenses", authMiddleware, receiptUpload.single("receipt"), Expens
  *     summary: Listar despesas
  *     tags: [Expenses]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Sucesso
@@ -119,7 +119,7 @@ router.get("/expenses", authMiddleware, ExpenseView.getAll);
  *     summary: Buscar despesa por ID
  *     tags: [Expenses]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -158,7 +158,7 @@ router.get("/expenses/:id", authMiddleware, ExpenseView.getById);
  *     summary: Editar despesa
  *     tags: [Expenses]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -239,7 +239,7 @@ router.get("/expenses/:id/receipt", authMiddleware, ExpenseView.getReceipt);
  *     summary: Deletar despesa
  *     tags: [Expenses]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -280,7 +280,7 @@ router.delete("/expenses/:id", authMiddleware, ExpenseView.delete);
  *     summary: Retorna o total de despesas
  *     tags: [Dashboard]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Sucesso
@@ -303,7 +303,7 @@ router.get("/dashboard/total-expenses", authMiddleware, ExpenseView.getTotalExpe
  *     summary: Retorna o total de despesas
  *     tags: [Dashboard]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Sucesso
@@ -326,7 +326,7 @@ router.get("/dashboard/expenses-count", authMiddleware, ExpenseView.getQuantidad
  *     summary: Retorna o total de despesas
  *     tags: [Dashboard]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Sucesso

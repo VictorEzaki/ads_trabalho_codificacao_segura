@@ -11,7 +11,7 @@ const authMiddleware = require('../middlewares/auth');
  *     summary: Criar categoria
  *     tags: [Categories]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -53,7 +53,7 @@ router.post("/categories", authMiddleware, CategoryView.create);
  *     summary: Listar categorias
  *     tags: [Categories]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Sucesso
@@ -72,7 +72,7 @@ router.get("/categories", authMiddleware, CategoryView.getAll);
  *     summary: Buscar categoria por ID
  *     tags: [Categories]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -111,7 +111,7 @@ router.get("/categories/:id", authMiddleware, CategoryView.getById);
  *     summary: Editar categoria
  *     tags: [Categories]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -166,7 +166,7 @@ router.put("/categories/:id", authMiddleware, CategoryView.update);
  *     summary: Deletar categoria
  *     tags: [Categories]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id

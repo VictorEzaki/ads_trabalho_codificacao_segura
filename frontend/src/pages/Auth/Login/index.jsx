@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import Notification from "../../../components/Notification";
-import { authService } from "../../../services/authService";
+import { AuthContext } from "../../../contexts/AuthContext";
 import "./index.css";
 
 function Login() {
+  const { login, authenticated, loading: authLoading } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -44,6 +48,10 @@ function Login() {
     };
   });
 
+  if (!authLoading && authenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   function handleChange(event) {
     const { name, value } = event.target;
 
@@ -60,7 +68,7 @@ function Login() {
     setNotification({ message: "", type: "error" });
 
     try {
-      const data = await authService.login(formData);
+      await login(formData.email, formData.password);
 
       sessionStorage.setItem(
         "flashMessage",
@@ -70,11 +78,7 @@ function Login() {
         })
       );
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-
-      window.location.href = "/dashboard";
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setNotification({
         message: err.response?.data?.message || err.message || "Erro ao fazer login",

@@ -9,16 +9,21 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:3000/api',
+      url: 'http://localhost:3001/api',
     },
   ],
   components: {
     securitySchemes: {
-      bearerAuth: {
-        type: "http",
-        scheme: "bearer",
-        bearerFormat: "JWT"
-      }
+      cookieAuth: {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'accessToken',
+      },
+      csrfToken: {
+        type: 'apiKey',
+        in: 'header',
+        name: 'X-CSRF-Token',
+      },
     },
     schemas: {
       ErrorResponse: {
