@@ -11,6 +11,7 @@ Principais funcionalidades atuais:
 - **Receitas**: Cadastro, edição, exclusão e histórico de entradas financeiras, com anexo opcional de comprovante em PDF ou PNG (validado por extensão, MIME type e assinatura binária).
 - **Categorias**: Cadastro, edição, listagem e remoção de categorias de despesas.
 - **Dashboard e Atalhos Rápidos**: Exibição de saldo total (receitas menos despesas), total e quantidade de despesas, gráfico de gastos por categoria e botões globais de atalho para lançamento rápido de receitas e despesas.
+- **Controle parental**: Um usuário administrador pode criar outros usuários com perfil restrito somente ao gerenciamento de suas despesas. As despesas desses usuário são considerados no balanço de saldo do usuário administrador.
 
 ---
 
