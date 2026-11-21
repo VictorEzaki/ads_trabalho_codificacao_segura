@@ -1,8 +1,10 @@
 const bcrypt = require('bcrypt');
 const UserModel = require('../models/user');
+const ExpenseModel = require('../models/expense');
 const RefreshTokenModel = require('../models/refreshToken');
 const sequelize = require('../models/database');
 const HttpError = require('../errors/HttpError');
+const { parsePositiveId, sanitizeText } = require('../utils/inputValidator');
 const { getRefreshMaxAgeMs } = require('../utils/cookie');
 const {
     generateAccessToken,
@@ -11,6 +13,49 @@ const {
     hashToken,
     generateCsrfToken,
 } = require('../utils/token');
+
+function validateUserEmail(email) {
+    const cleaned = sanitizeText(email, {
+        fieldName: 'Email',
+        minLength: 1,
+        maxLength: 255,
+        required: true,
+    }).toLowerCase();
+
+    if (cleaned.length < 5 || !cleaned.includes('@') || /\s/.test(cleaned)) {
+        throw new HttpError(400, 'O email deve conter pelo menos 5 caracteres e incluir um "@"');
+    }
+
+    return cleaned;
+}
+
+function validateUserName(name) {
+    return sanitizeText(name, {
+        fieldName: 'Nome',
+        minLength: 1,
+        maxLength: 255,
+        required: true,
+    });
+}
+
+function validatePassword(password, { required = true } = {}) {
+    if (password === undefined || password === null || password === '') {
+        if (required) {
+            throw new HttpError(400, 'Senha é um campo obrigatório.');
+        }
+        return null;
+    }
+
+    if (typeof password !== 'string') {
+        throw new HttpError(400, 'Senha inválida.');
+    }
+
+    if (password.length < 6) {
+        throw new HttpError(400, 'A senha deve conter pelo menos 6 caracteres');
+    }
+
+    return password;
+}
 
 class UserController {
     constructor() {
@@ -22,7 +67,9 @@ class UserController {
         return {
             id: userData.id,
             name: userData.name,
-            email: userData.email
+            email: userData.email,
+            role: userData.role || 'admin',
+            parentId: userData.parentId ?? null,
         };
     }
 
@@ -49,47 +96,104 @@ class UserController {
         };
     }
 
-    async getAll() {
-        const users = (await UserModel.getAllUsers()).map(u => this.mapUser(u));
+    async getAll(requester) {
+        const adminId = parsePositiveId(requester?.id, 'Administrador');
+        const [admin, children] = await Promise.all([
+            UserModel.getUserById(adminId),
+            UserModel.getUsersByParentId(adminId),
+        ]);
 
-        if (!users) {
-            throw new HttpError(500, 'Ocorreu um erro ao buscar usuários.');
-        }
-
-        return users;
+        const familyUsers = [admin, ...children].filter(Boolean);
+        return familyUsers.map((u) => this.mapUser(u));
     }
 
     async create(email, password, name) {
-        if (!email) {
-            throw new HttpError(400, 'Email é um campo obrigatório.');
-        }
+        const safeEmail = validateUserEmail(email);
+        const safePassword = validatePassword(password, { required: true });
+        const safeName = validateUserName(name);
 
-        if (!password) {
-            throw new HttpError(400, 'Senha é um campo obrigatório.');
-        }
-
-        if (!name) {
-            throw new HttpError(400, 'Nome é um campo obrigatório.');
-        }
-
-        if (password.length < 6) {
-            throw new HttpError(400, 'A senha deve conter pelo menos 6 caracteres');
-        }
-
-        if (email.length < 5 || !email.includes('@')) {
-            throw new HttpError(400, 'O email deve conter pelo menos 5 caracteres e incluir um "@"');
-        }
-
-        const userExists = await UserModel.getUserByEmail(email);
+        const userExists = await UserModel.getUserByEmail(safeEmail);
         if (userExists) {
             throw new HttpError(409, 'Já existe um usuário cadastrado com este email.');
         }
 
-        const hashPassword = await bcrypt.hash(password, 10);
+        const hashPassword = await bcrypt.hash(safePassword, 10);
 
-        const user = await UserModel.createUser(email, hashPassword, name);
+        // Cadastro público (/register) cria sempre um administrador independente
+        const user = await UserModel.createUser(safeEmail, hashPassword, safeName, {
+            role: 'admin',
+            parentId: null,
+        });
 
         return this.mapUser(user);
+    }
+
+    async getFamilyMembers(adminId) {
+        const safeAdminId = parsePositiveId(adminId, 'Administrador');
+        const children = await UserModel.getUsersByParentId(safeAdminId);
+        return children.map((child) => this.mapUser(child));
+    }
+
+    async createFamilyMember(adminId, { email, password, name }) {
+        const safeAdminId = parsePositiveId(adminId, 'Administrador');
+        const safeEmail = validateUserEmail(email);
+        const safePassword = validatePassword(password, { required: true });
+        const safeName = validateUserName(name);
+
+        const userExists = await UserModel.getUserByEmail(safeEmail);
+        if (userExists) {
+            throw new HttpError(409, 'Já existe um usuário cadastrado com este email.');
+        }
+
+        const hashPassword = await bcrypt.hash(safePassword, 10);
+
+        // Usuário criado por um admin tem sempre role 'user' e fica vinculado à família
+        const child = await UserModel.createUser(safeEmail, hashPassword, safeName, {
+            role: 'user',
+            parentId: safeAdminId,
+        });
+
+        return this.mapUser(child);
+    }
+
+    async updateFamilyMember(adminId, childId, { email, password, name }) {
+        const safeAdminId = parsePositiveId(adminId, 'Administrador');
+        const safeChildId = parsePositiveId(childId, 'Usuário');
+
+        const child = await UserModel.getUserByIdAndParent(safeChildId, safeAdminId);
+        if (!child) {
+            throw new HttpError(404, 'Usuário não encontrado.');
+        }
+
+        const safeEmail = validateUserEmail(email);
+        const safeName = validateUserName(name);
+        const safePassword = validatePassword(password, { required: false });
+
+        const emailExists = await UserModel.getUserByEmail(safeEmail);
+        if (emailExists && emailExists.id !== safeChildId) {
+            throw new HttpError(409, 'Já existe um usuário cadastrado com este email.');
+        }
+
+        const hashPassword = safePassword ? await bcrypt.hash(safePassword, 10) : null;
+        const updatedChild = await UserModel.updateUser(safeChildId, safeEmail, hashPassword, safeName);
+
+        return this.mapUser(updatedChild);
+    }
+
+    async deleteFamilyMember(adminId, childId) {
+        const safeAdminId = parsePositiveId(adminId, 'Administrador');
+        const safeChildId = parsePositiveId(childId, 'Usuário');
+
+        const child = await UserModel.getUserByIdAndParent(safeChildId, safeAdminId);
+        if (!child) {
+            throw new HttpError(404, 'Usuário não encontrado.');
+        }
+
+        const receiptPaths = await ExpenseModel.getReceiptPathsByUserId(safeChildId);
+        await RefreshTokenModel.revokeAllByUserId(safeChildId);
+        await UserModel.deleteChildUser(safeChildId, safeAdminId);
+
+        return receiptPaths;
     }
 
     async login(email, password) {
@@ -97,7 +201,8 @@ class UserController {
             throw new HttpError(400, 'Email e senha são obrigatórios.');
         }
 
-        const user = await UserModel.getUserByEmail(email);
+        const normalizedEmail = String(email).trim().toLowerCase();
+        const user = await UserModel.getUserByEmail(normalizedEmail);
         if (!user) {
             throw new HttpError(400, 'Credenciais inválidas.');
         }
@@ -195,70 +300,57 @@ class UserController {
         await RefreshTokenModel.revokeByTokenHash(tokenHash);
     }
 
-    async getById(id) {
-        const user = await UserModel.getUserById(id);
+    async getById(id, requester = null) {
+        const safeId = parsePositiveId(id, 'ID');
+        const user = await UserModel.getUserById(safeId);
 
         if (!user) {
             throw new HttpError(404, 'Nenhum usuário encontrado.');
         }
 
+        if (requester) {
+            const isSelf = Number(user.id) === Number(requester.id);
+            const isOwnChild = requester.role === 'admin' && Number(user.parentId) === Number(requester.id);
+            if (!isSelf && !isOwnChild) {
+                throw new HttpError(404, 'Nenhum usuário encontrado.');
+            }
+        }
+
         return this.mapUser(user);
     }
 
-    async update(id, email, password, name) {
-        if (!email) {
-            throw new HttpError(400, 'Email é um campo obrigatório.');
-        }
+    async update(id, email, password, name, requester) {
+        const safeId = parsePositiveId(id, 'ID');
+        const userExists = await UserModel.getUserById(safeId);
 
-        if (!password) {
-            throw new HttpError(400, 'Senha é um campo obrigatório.');
-        }
-
-        if (!name) {
-            throw new HttpError(400, 'Nome é um campo obrigatório.');
-        }
-
-        if (password.length < 6) {
-            throw new HttpError(400, 'A senha deve conter pelo menos 6 caracteres');
-        }
-
-        if (email.length < 5 || !email.includes('@')) {
-            throw new HttpError(400, 'O email deve conter pelo menos 5 caracteres e incluir um "@"');
-        }
-
-        const userExists = await UserModel.getUserById(Number(id));
         if (!userExists) {
             throw new HttpError(404, 'Usuário não encontrado.');
         }
 
-        const emailExists = await UserModel.getUserByEmail(email);
-        if (emailExists && emailExists.id !== Number(id)) {
+        const isSelf = Number(userExists.id) === Number(requester?.id);
+        const isOwnChild = requester?.role === 'admin' && Number(userExists.parentId) === Number(requester.id);
+        if (!isSelf && !isOwnChild) {
+            throw new HttpError(404, 'Usuário não encontrado.');
+        }
+
+        const safeEmail = validateUserEmail(email);
+        const safeName = validateUserName(name);
+        const safePassword = validatePassword(password, { required: true });
+
+        const emailExists = await UserModel.getUserByEmail(safeEmail);
+        if (emailExists && emailExists.id !== safeId) {
             throw new HttpError(409, 'Já existe um usuário cadastrado com este email.');
         }
 
-        const hashPassword = await bcrypt.hash(password, 10);
-        const user = await UserModel.updateUser(id, email, hashPassword, name);
+        const hashPassword = await bcrypt.hash(safePassword, 10);
+        const user = await UserModel.updateUser(safeId, safeEmail, hashPassword, safeName);
 
         return this.mapUser(user);
     }
 
-    async delete(id) {
-        // ID é obrigatório para edição
-        if (!id) {
-            throw new HttpError(400, 'ID é obrigatório.');
-        }
-
-        // verifica se ID é maior que zero
-        if (id < 1) {
-            throw new HttpError(400, 'ID não pode ser menor que 1.');
-        }
-
-        const user = await UserModel.getUserById(Number(id));
-        if (!user) {
-            throw new HttpError(404, 'Usuário não encontrado.');
-        }
-
-        return await UserModel.deleteUser(id);
+    async delete(id, requester) {
+        const safeId = parsePositiveId(id, 'ID');
+        return this.deleteFamilyMember(requester?.id, safeId);
     }
 }
 

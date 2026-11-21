@@ -1,5 +1,6 @@
 const IncomeModel = require('../models/income');
 const ExpenseModel = require('../models/expense');
+const UserModel = require('../models/user');
 const HttpError = require('../errors/HttpError');
 const {
     parsePositiveId,
@@ -140,9 +141,12 @@ class IncomeController {
 
     async getDashboardBalance(userId) {
         const safeUserId = parsePositiveId(userId, 'Usuário');
+        const childIds = await UserModel.getChildIdsByParentId(safeUserId);
+        const familyUserIds = [safeUserId, ...childIds];
+
         const [incomesData, expensesData] = await Promise.all([
             IncomeModel.getTotalIncomes(safeUserId),
-            ExpenseModel.getTotalExpenses(safeUserId),
+            ExpenseModel.getTotalExpenses(familyUserIds),
         ]);
 
         const totalIncomes = Number(incomesData?.total || 0);

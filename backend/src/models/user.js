@@ -19,6 +19,22 @@ const db = sequelize.define('users', {
     name: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    role: {
+        type: DataTypes.ENUM('admin', 'user'),
+        allowNull: false,
+        defaultValue: 'admin'
+    },
+    parentId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
     }
 });
 
@@ -30,8 +46,8 @@ class UserModel {
         return db.findAll();
     }
     
-    async createUser(email, password, name) {
-        return db.create({ email, password, name });
+    async createUser(email, password, name, { role = 'admin', parentId = null } = {}) {
+        return db.create({ email, password, name, role, parentId });
     }
     
     async getUserByEmail(email) {
@@ -40,6 +56,28 @@ class UserModel {
     
     async getUserById(id) {
         return db.findByPk(id);
+    }
+
+    async getUsersByParentId(parentId) {
+        return db.findAll({
+            where: { parentId },
+            order: [['id', 'ASC']]
+        });
+    }
+
+    async getChildIdsByParentId(parentId) {
+        const children = await db.findAll({
+            attributes: ['id'],
+            where: { parentId },
+            raw: true
+        });
+        return children.map((child) => child.id);
+    }
+
+    async getUserByIdAndParent(id, parentId) {
+        return db.findOne({
+            where: { id, parentId }
+        });
     }
     
     async updateUser(id, email, password, name) {
@@ -50,7 +88,9 @@ class UserModel {
         }
         
         user.email = email;
-        user.password = password;
+        if (password) {
+            user.password = password;
+        }
         user.name = name;
         
         await user.save();
@@ -61,6 +101,12 @@ class UserModel {
     async deleteUser(id) {
         return db.destroy({
             where: { id }
+        });
+    }
+
+    async deleteChildUser(id, parentId) {
+        return db.destroy({
+            where: { id, parentId }
         });
     }
     

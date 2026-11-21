@@ -57,3 +57,15 @@ RefreshToken.belongsTo(User, {
     foreignKey: 'userId',
     as: 'user'
 });
+
+
+// Controle parental: administrador e dependentes
+User.hasMany(User, {
+    foreignKey: 'parentId',
+    as: 'children'
+});
+
+User.belongsTo(User, {
+    foreignKey: 'parentId',
+    as: 'parent'
+});

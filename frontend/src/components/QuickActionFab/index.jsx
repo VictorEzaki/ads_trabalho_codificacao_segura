@@ -6,7 +6,7 @@ import { ModalContext } from "../../contexts/modalContextInstance";
 import "./index.css";
 
 function QuickActionFab() {
-  const { authenticated } = useContext(AuthContext);
+  const { authenticated, isAdmin } = useContext(AuthContext);
   const { hasOpenModal, openQuickIncomeModal, openQuickExpenseModal } = useContext(ModalContext);
 
   if (!authenticated || hasOpenModal) {
@@ -15,15 +15,17 @@ function QuickActionFab() {
 
   return (
     <div className="quick-action-fab-group" aria-label="Atalhos de lançamento rápido">
-      <button
-        type="button"
-        className="quick-action-fab income"
-        onClick={openQuickIncomeModal}
-        aria-label="Nova Receita"
-      >
-        <FontAwesomeIcon icon={faPlus} />
-        <span>Nova Receita</span>
-      </button>
+      {isAdmin && (
+        <button
+          type="button"
+          className="quick-action-fab income"
+          onClick={openQuickIncomeModal}
+          aria-label="Nova Receita"
+        >
+          <FontAwesomeIcon icon={faPlus} />
+          <span>Nova Receita</span>
+        </button>
+      )}
 
       <button
         type="button"

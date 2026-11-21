@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faPlus, faTrash, faEye, faDownload, faFilePdf, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { expenseService } from "../../services/expenseService";
 import { categoriesService } from "../../services/categoriesService";
+import { AuthContext } from "../../contexts/AuthContext";
 import { ModalContext } from "../../contexts/modalContextInstance";
 import { useRegisterModal } from "../../hooks/useRegisterModal";
 import ExpenseModal from "../../components/ExpenseModal";
@@ -10,6 +11,7 @@ import Notification from "../../components/Notification";
 import "./index.css";
 
 function Expenses() {
+  const { user, isAdmin } = useContext(AuthContext);
   const { notifyDataChanged } = useContext(ModalContext);
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -203,7 +205,8 @@ function Expenses() {
   }
 
   const filteredItems = items.filter((item) => {
-    const searchText = `${item.description || ""} ${item.amount || ""} ${item.date || ""} ${item.status || ""}`.toLowerCase();
+    const ownerName = item.users?.name || "";
+    const searchText = `${item.description || ""} ${item.amount || ""} ${item.date || ""} ${item.status || ""} ${ownerName}`.toLowerCase();
     return searchText.includes(search.toLowerCase());
   });
 
@@ -312,6 +315,7 @@ function Expenses() {
               <th>Data</th>
               <th>Status</th>
               <th>Categoria</th>
+              {isAdmin && <th>Responsável</th>}
               <th>Anexos</th>
               <th>Ações</th>
             </tr>
@@ -319,7 +323,7 @@ function Expenses() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7" className="empty-state">
+                <td colSpan={isAdmin ? 8 : 7} className="empty-state">
                   Carregando despesas...
                 </td>
               </tr>
@@ -331,6 +335,13 @@ function Expenses() {
                   <td>{item.date}</td>
                   <td>{item.status}</td>
                   <td>{categories.find((category) => category.id === item.categoryId)?.name || item.categoryId}</td>
+                  {isAdmin && (
+                    <td>
+                      {Number(item.userId) === Number(user?.id)
+                        ? `${item.users?.name || user?.name || "Você"} (Você)`
+                        : item.users?.name || "Dependente"}
+                    </td>
+                  )}
                   <td>
                     {item.receiptPath ? (
                       <div className="table-actions attachment-actions">
@@ -361,7 +372,7 @@ function Expenses() {
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="empty-state">
+                <td colSpan={isAdmin ? 8 : 7} className="empty-state">
                   Nenhuma despesa encontrada.
                 </td>
               </tr>

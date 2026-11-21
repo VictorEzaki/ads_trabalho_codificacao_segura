@@ -13,7 +13,7 @@ import ExpenseModal from "./../../components/ExpenseModal";
 import "./index.css";
 
 function MainLayoutContent() {
-  const { logout } = useContext(AuthContext);
+  const { logout, isAdmin } = useContext(AuthContext);
   const {
     activeQuickModal,
     closeQuickModal,
@@ -73,15 +73,17 @@ function MainLayoutContent() {
 
       <QuickActionFab />
 
-      <IncomeModal
-        isOpen={activeQuickModal === "income"}
-        onClose={closeQuickModal}
-        onSuccess={(message) => {
-          showNotification(message, "success");
-          notifyDataChanged("income");
-        }}
-        onError={(message) => showNotification(message, "error")}
-      />
+      {isAdmin && (
+        <IncomeModal
+          isOpen={activeQuickModal === "income"}
+          onClose={closeQuickModal}
+          onSuccess={(message) => {
+            showNotification(message, "success");
+            notifyDataChanged("income");
+          }}
+          onError={(message) => showNotification(message, "error")}
+        />
+      )}
 
       <ExpenseModal
         isOpen={activeQuickModal === "expense"}

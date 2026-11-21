@@ -2,6 +2,7 @@ const sequelize = require('./database.js');
 const { fn, col, Op } = require('sequelize');
 const { DataTypes } = require('sequelize');
 const CategoryModel = require('./category.js');
+const UserModel = require('./user.js');
 
 const db = sequelize.define('expenses', {
     id: {
@@ -58,6 +59,10 @@ class ExpenseModel {
     constructor() { }
     
     async getAll(categoryId, dateIni, dateFim, vlMin, vlMax, status, userId) {
+        if (Array.isArray(userId) && userId.length === 0) {
+            return [];
+        }
+
         const where = {};
         
         // filtrar por usuário
@@ -99,8 +104,15 @@ class ExpenseModel {
         }
 
         return db.findAll({
-        where
-    });
+            where,
+            include: [
+                {
+                    model: UserModel.User,
+                    as: 'users',
+                    attributes: ['id', 'name', 'email']
+                }
+            ]
+        });
 
     }
     
@@ -114,7 +126,7 @@ class ExpenseModel {
         return db.create({ amount, date, description, status, categoryId, userId, receiptPath })
     }
     
-    async update(amount, date, description, status, categoryId, userId, id, receiptPath) {
+    async update(amount, date, description, status, categoryId, id, receiptPath) {
         const expense = await db.findByPk(id);
         
         if (!expense) {
@@ -126,7 +138,6 @@ class ExpenseModel {
         expense.description = description;
         expense.status = status;
         expense.categoryId = categoryId;
-        expense.userId = userId;
         if (receiptPath !== undefined) expense.receiptPath = receiptPath;
         
         await expense.save();
@@ -139,8 +150,26 @@ class ExpenseModel {
             where: { id }
         });
     }
+
+    async getReceiptPathsByUserId(userId) {
+        const expenses = await db.findAll({
+            attributes: ['receiptPath'],
+            where: {
+                userId,
+                receiptPath: {
+                    [Op.ne]: null
+                }
+            },
+            raw: true
+        });
+        return expenses.map((item) => item.receiptPath).filter(Boolean);
+    }
     
     async getTotalExpenses(userId) {
+        if (Array.isArray(userId) && userId.length === 0) {
+            return { total: 0 };
+        }
+
         const total = await db.sum("amount", {
             where: {
                 userId: userId
@@ -153,6 +182,10 @@ class ExpenseModel {
     }
     
     async getQuantidadeExpenses(userId) {
+        if (Array.isArray(userId) && userId.length === 0) {
+            return { quantidade: 0 };
+        }
+
         const quantidade = await db.count({
             where: {
                 userId: userId
@@ -165,6 +198,10 @@ class ExpenseModel {
     }
     
     async getTotalExpensesByCategory(userId) {
+        if (Array.isArray(userId) && userId.length === 0) {
+            return [];
+        }
+
         const expensesByCategory = await db.findAll({
             attributes: [
                 [fn("SUM", col("expenses.amount")), "total"]

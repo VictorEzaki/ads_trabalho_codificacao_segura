@@ -4,6 +4,7 @@ const router = express.Router();
 const ExpenseView = require('../views/expense');
 
 const authMiddleware = require('../middlewares/auth');
+const { requireRole } = require('../middlewares/authorize');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -295,7 +296,7 @@ router.delete("/expenses/:id", authMiddleware, ExpenseView.delete);
  *       500:
  *         description: Erro interno do servidor
  */
-router.get("/dashboard/total-expenses", authMiddleware, ExpenseView.getTotalExpenses);
+router.get("/dashboard/total-expenses", authMiddleware, requireRole('admin'), ExpenseView.getTotalExpenses);
 /**
  * @swagger
  * /dashboard/expenses-count:
@@ -318,7 +319,7 @@ router.get("/dashboard/total-expenses", authMiddleware, ExpenseView.getTotalExpe
  *       500:
  *         description: Erro interno do servidor
  */
-router.get("/dashboard/expenses-count", authMiddleware, ExpenseView.getQuantidadeExpenses);
+router.get("/dashboard/expenses-count", authMiddleware, requireRole('admin'), ExpenseView.getQuantidadeExpenses);
 /**
  * @swagger
  * /dashboard/expenses-by-category:
@@ -344,6 +345,6 @@ router.get("/dashboard/expenses-count", authMiddleware, ExpenseView.getQuantidad
  *       500:
  *         description: Erro interno do servidor
  */
-router.get("/dashboard/expenses-by-category", authMiddleware, ExpenseView.getTotalExpensesByCategory);
+router.get("/dashboard/expenses-by-category", authMiddleware, requireRole('admin'), ExpenseView.getTotalExpensesByCategory);
 
 module.exports = router;

@@ -7,6 +7,7 @@ function generateAccessToken(user) {
     {
       id: user.id,
       email: user.email,
+      role: user.role,
       type: 'access',
     },
     authConfig.access.secret,
@@ -22,6 +23,7 @@ function generateRefreshToken(user) {
     {
       id: user.id,
       email: user.email,
+      role: user.role,
       type: 'refresh',
     },
     authConfig.refresh.secret,

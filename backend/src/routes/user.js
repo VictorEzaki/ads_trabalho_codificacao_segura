@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const UserView = require('../views/user');
 const authMiddleware = require('../middlewares/auth');
+const { requireRole } = require('../middlewares/authorize');
 
 /**
  * @swagger
@@ -180,7 +181,104 @@ router.get("/auth/me", authMiddleware, UserView.me);
  *       500:
  *          description: Ocorreu um erro ao buscar usuários
  */
-router.get("/users", authMiddleware, UserView.getAll);
+router.get("/users", authMiddleware, requireRole('admin'), UserView.getAll);
+
+/**
+ * @swagger
+ * /family/users:
+ *   get:
+ *     summary: Listar usuários filhos da família do administrador
+ *     tags: [Family]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de dependentes da família
+ *       403:
+ *         description: Acesso negado (somente administradores)
+ */
+router.get("/family/users", authMiddleware, requireRole('admin'), UserView.getFamilyMembers);
+
+/**
+ * @swagger
+ * /family/users:
+ *   post:
+ *     summary: Criar usuário dependente (role user) vinculado ao administrador autenticado
+ *     tags: [Family]
+ *     security:
+ *       - cookieAuth: []
+ *       - csrfToken: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Dependente criado com sucesso
+ *       403:
+ *         description: Acesso negado (somente administradores)
+ */
+router.post("/family/users", authMiddleware, requireRole('admin'), UserView.createFamilyMember);
+
+/**
+ * @swagger
+ * /family/users/{id}:
+ *   put:
+ *     summary: Editar usuário dependente da própria família
+ *     tags: [Family]
+ *     security:
+ *       - cookieAuth: []
+ *       - csrfToken: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Dependente atualizado com sucesso
+ *       403:
+ *         description: Acesso negado (somente administradores)
+ *       404:
+ *         description: Usuário não encontrado
+ */
+router.put("/family/users/:id", authMiddleware, requireRole('admin'), UserView.updateFamilyMember);
+
+/**
+ * @swagger
+ * /family/users/{id}:
+ *   delete:
+ *     summary: Remover usuário dependente da própria família
+ *     tags: [Family]
+ *     security:
+ *       - cookieAuth: []
+ *       - csrfToken: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: Dependente removido com sucesso
+ *       403:
+ *         description: Acesso negado (somente administradores)
+ *       404:
+ *         description: Usuário não encontrado
+ */
+router.delete("/family/users/:id", authMiddleware, requireRole('admin'), UserView.deleteFamilyMember);
 /**
  * @swagger
  * /users/{id}:
@@ -338,6 +436,6 @@ router.put("/users/:id", authMiddleware, UserView.update);
  *       404:
  *         description: Nenhum usuário encontrado
  */
-router.delete("/users/:id", authMiddleware, UserView.delete);
+router.delete("/users/:id", authMiddleware, requireRole('admin'), UserView.delete);
 
 module.exports = router;
