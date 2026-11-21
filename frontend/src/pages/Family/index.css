@@ -1,0 +1,21 @@
+.family-subtitle {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--color-primary);
+}
+
+.family-form-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}

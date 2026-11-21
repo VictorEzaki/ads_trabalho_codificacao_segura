@@ -10,11 +10,8 @@ class ExpenseView {
     async getAll(req, res, next) {
         try {
             const { categoryId, dateIni, dateFim, vlMin, vlMax, status } = req.query;
-            const userId  = req.user.id;
-            console.log(vlMin);
-            console.log(vlMax);
             
-            const expenses = await ExpenseController.getAll(categoryId, dateIni, dateFim, vlMin, vlMax, status, userId);
+            const expenses = await ExpenseController.getAll(categoryId, dateIni, dateFim, vlMin, vlMax, status, req.user);
             
             res.status(200).json(expenses);
         } catch (error) {
@@ -26,7 +23,7 @@ class ExpenseView {
         try {
             const { id } = req.params;
             
-            const expense = await ExpenseController.getById(Number(id), req.user.id);
+            const expense = await ExpenseController.getById(Number(id), req.user);
             
             res.status(200).json(expense);
         } catch (error) {
@@ -87,10 +84,10 @@ class ExpenseView {
                 receiptPath = req.file.filename;
             }
 
-            const previousReceipt = req.file ? await ExpenseController.getReceiptPathForUpdate(Number(id), req.user.id) : null;
+            const previousReceipt = req.file ? await ExpenseController.getReceiptPathForUpdate(Number(id), req.user) : null;
             const expense = await ExpenseController.update(
                 amount === undefined ? undefined : Number(amount), date, description, status,
-                categoryId === undefined ? undefined : Number(categoryId), req.user.id, Number(id), receiptPath
+                categoryId === undefined ? undefined : Number(categoryId), req.user, Number(id), receiptPath
             );
 
             if (req.file && previousReceipt && previousReceipt !== receiptPath) {
@@ -105,7 +102,7 @@ class ExpenseView {
 
     async getReceipt(req, res, next) {
         try {
-            const filename = await ExpenseController.getReceipt(Number(req.params.id), req.user.id);
+            const filename = await ExpenseController.getReceipt(Number(req.params.id), req.user);
             const safePath = path.join(uploadDirectory, path.basename(filename));
             await fs.access(safePath);
             const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
@@ -121,7 +118,7 @@ class ExpenseView {
         try {
             const { id } = req.params;
             
-            const deletedReceiptPath = await ExpenseController.delete(Number(id), req.user.id);
+            const deletedReceiptPath = await ExpenseController.delete(Number(id), req.user);
             if (deletedReceiptPath) {
                 await fs.unlink(path.join(uploadDirectory, path.basename(deletedReceiptPath))).catch(() => {});
             }

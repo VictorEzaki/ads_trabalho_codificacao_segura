@@ -4,6 +4,7 @@ const router = express.Router();
 const CategoryView = require('../views/category');
 
 const authMiddleware = require('../middlewares/auth');
+const { requireRole } = require('../middlewares/authorize');
 /**
  * @swagger
  * /categories:
@@ -45,7 +46,7 @@ const authMiddleware = require('../middlewares/auth');
  *       500:
  *         description: Erro ao criar categoria
  */
-router.post("/categories", authMiddleware, CategoryView.create);
+router.post("/categories", authMiddleware, requireRole('admin'), CategoryView.create);
 /**
  * @swagger
  * /categories:
@@ -158,7 +159,7 @@ router.get("/categories/:id", authMiddleware, CategoryView.getById);
  *       500:
  *         description: Ocorreu um erro ao editar a categoria
  */
-router.put("/categories/:id", authMiddleware, CategoryView.update);
+router.put("/categories/:id", authMiddleware, requireRole('admin'), CategoryView.update);
 /**
  * @swagger
  * /categories/{id}:
@@ -197,6 +198,6 @@ router.put("/categories/:id", authMiddleware, CategoryView.update);
  *       500:
  *         description: Erro interno do servidor 
  */
-router.delete("/categories/:id", authMiddleware, CategoryView.delete);
+router.delete("/categories/:id", authMiddleware, requireRole('admin'), CategoryView.delete);
 
 module.exports = router;

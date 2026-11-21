@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const IncomeView = require('../views/income');
 const authMiddleware = require('../middlewares/auth');
+const { requireRole } = require('../middlewares/authorize');
 const { createIncomeReceiptUpload } = require('../utils/receiptFile');
 
 const router = express.Router();
@@ -53,7 +54,7 @@ const receiptUpload = createIncomeReceiptUpload(uploadDirectory);
  *       403:
  *         description: Token CSRF inválido ou ausente
  */
-router.post('/incomes', authMiddleware, receiptUpload.single('receipt'), IncomeView.create);
+router.post('/incomes', authMiddleware, requireRole('admin'), receiptUpload.single('receipt'), IncomeView.create);
 
 /**
  * @swagger
@@ -67,7 +68,7 @@ router.post('/incomes', authMiddleware, receiptUpload.single('receipt'), IncomeV
  *       200:
  *         description: Lista de receitas
  */
-router.get('/incomes', authMiddleware, IncomeView.getAll);
+router.get('/incomes', authMiddleware, requireRole('admin'), IncomeView.getAll);
 
 /**
  * @swagger
@@ -89,7 +90,7 @@ router.get('/incomes', authMiddleware, IncomeView.getAll);
  *       404:
  *         description: Receita não encontrada
  */
-router.get('/incomes/:id', authMiddleware, IncomeView.getById);
+router.get('/incomes/:id', authMiddleware, requireRole('admin'), IncomeView.getById);
 
 /**
  * @swagger
@@ -112,7 +113,7 @@ router.get('/incomes/:id', authMiddleware, IncomeView.getById);
  *       404:
  *         description: Receita não encontrada
  */
-router.put('/incomes/:id', authMiddleware, receiptUpload.single('receipt'), IncomeView.update);
+router.put('/incomes/:id', authMiddleware, requireRole('admin'), receiptUpload.single('receipt'), IncomeView.update);
 
 /**
  * @swagger
@@ -134,7 +135,7 @@ router.put('/incomes/:id', authMiddleware, receiptUpload.single('receipt'), Inco
  *       404:
  *         description: Anexo não encontrado
  */
-router.get('/incomes/:id/receipt', authMiddleware, IncomeView.getReceipt);
+router.get('/incomes/:id/receipt', authMiddleware, requireRole('admin'), IncomeView.getReceipt);
 
 /**
  * @swagger
@@ -157,7 +158,7 @@ router.get('/incomes/:id/receipt', authMiddleware, IncomeView.getReceipt);
  *       404:
  *         description: Receita não encontrada
  */
-router.delete('/incomes/:id', authMiddleware, IncomeView.delete);
+router.delete('/incomes/:id', authMiddleware, requireRole('admin'), IncomeView.delete);
 
 /**
  * @swagger
@@ -175,6 +176,6 @@ router.delete('/incomes/:id', authMiddleware, IncomeView.delete);
  *             schema:
  *               $ref: '#/components/schemas/BalanceSummary'
  */
-router.get('/dashboard/balance', authMiddleware, IncomeView.getDashboardBalance);
+router.get('/dashboard/balance', authMiddleware, requireRole('admin'), IncomeView.getDashboardBalance);
 
 module.exports = router;

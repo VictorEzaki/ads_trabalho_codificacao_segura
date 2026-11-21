@@ -7,6 +7,7 @@ import Dashboard from './../pages/Dashboard'
 import Incomes from './../pages/Incomes'
 import Expenses from './../pages/Expenses'
 import Categories from './../pages/Categories'
+import Family from './../pages/Family'
 import MainLayout from './../layouts/MainLayout'
 
 function AppRoutes() {
@@ -14,25 +15,30 @@ function AppRoutes() {
         <Routes>
             <Route path='/' element={<Login />} />
             <Route path='/register' element={<Register />} />
-            <Route element={ <MainLayout />}>
+            <Route element={<MainLayout />}>
                 <Route path='/dashboard' element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={['admin']}>
                         <Dashboard />
                     </PrivateRoute>
                 } />
                 <Route path='/incomes' element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={['admin']}>
                         <Incomes />
                     </PrivateRoute>
                 } />
                 <Route path='/expenses' element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={['admin', 'user']}>
                         <Expenses />
                     </PrivateRoute>
                 } />
                 <Route path='/categories' element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={['admin']}>
                         <Categories />
+                    </PrivateRoute>
+                } />
+                <Route path='/family' element={
+                    <PrivateRoute allowedRoles={['admin']}>
+                        <Family />
                     </PrivateRoute>
                 } />
             </Route>

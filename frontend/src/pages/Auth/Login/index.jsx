@@ -5,7 +5,7 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import "./index.css";
 
 function Login() {
-  const { login, authenticated, loading: authLoading } = useContext(AuthContext);
+  const { login, authenticated, user, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -49,7 +49,8 @@ function Login() {
   });
 
   if (!authLoading && authenticated) {
-    return <Navigate to="/dashboard" replace />;
+    const defaultRoute = user?.role === "admin" ? "/dashboard" : "/expenses";
+    return <Navigate to={defaultRoute} replace />;
   }
 
   function handleChange(event) {
@@ -68,7 +69,7 @@ function Login() {
     setNotification({ message: "", type: "error" });
 
     try {
-      await login(formData.email, formData.password);
+      const loggedUser = await login(formData.email, formData.password);
 
       sessionStorage.setItem(
         "flashMessage",
@@ -78,7 +79,8 @@ function Login() {
         })
       );
 
-      navigate("/dashboard", { replace: true });
+      const defaultRoute = loggedUser?.role === "admin" ? "/dashboard" : "/expenses";
+      navigate(defaultRoute, { replace: true });
     } catch (err) {
       setNotification({
         message: err.response?.data?.message || err.message || "Erro ao fazer login",

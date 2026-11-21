@@ -42,7 +42,8 @@ const swaggerDefinition = {
           id: { type: 'integer', example: 1, readOnly: true },
           name: { type: 'string', example: 'Victor Ezaki' },
           email: { type: 'string', example: 'victor@email.com' },
-          password: { type: 'string', example: '123456' },
+          role: { type: 'string', enum: ['admin', 'user'], example: 'admin' },
+          parentId: { type: 'integer', nullable: true, example: null },
         },
       },
       

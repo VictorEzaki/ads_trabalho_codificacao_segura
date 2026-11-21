@@ -1,3 +1,5 @@
+const fs = require('fs/promises');
+const path = require('path');
 const UserController = require('../controllers/user');
 const {
     REFRESH_TOKEN_COOKIE_NAME,
@@ -7,6 +9,16 @@ const {
     clearAuthCookies,
 } = require('../utils/cookie');
 const { generateCsrfToken } = require('../utils/token');
+
+const expenseUploadDirectory = path.resolve(__dirname, '../../uploads/cupons');
+
+async function cleanupExpenseReceipts(receiptPaths = []) {
+    await Promise.all(
+        receiptPaths.map((receiptPath) =>
+            fs.unlink(path.join(expenseUploadDirectory, path.basename(receiptPath))).catch(() => {})
+        )
+    );
+}
 
 class UserView {
     constructor() {
@@ -68,7 +80,7 @@ class UserView {
 
     async getAll(req, res, next) {
         try {
-            const users = await UserController.getAll();
+            const users = await UserController.getAll(req.user);
             res.status(200).json(users);
         } catch (error) {
             next(error);
@@ -86,10 +98,51 @@ class UserView {
         }
     }
 
+    async getFamilyMembers(req, res, next) {
+        try {
+            const members = await UserController.getFamilyMembers(req.user.id);
+            res.status(200).json(members);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async createFamilyMember(req, res, next) {
+        try {
+            const { email, password, name } = req.body;
+            const member = await UserController.createFamilyMember(req.user.id, { email, password, name });
+            res.status(201).json(member);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async updateFamilyMember(req, res, next) {
+        try {
+            const id = Number(req.params.id);
+            const { email, password, name } = req.body;
+            const member = await UserController.updateFamilyMember(req.user.id, id, { email, password, name });
+            res.status(200).json(member);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async deleteFamilyMember(req, res, next) {
+        try {
+            const id = Number(req.params.id);
+            const receiptPaths = await UserController.deleteFamilyMember(req.user.id, id);
+            await cleanupExpenseReceipts(receiptPaths);
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async getById(req, res, next) {
         try {
             const id = Number(req.params.id);
-            const user = await UserController.getById(id);
+            const user = await UserController.getById(id, req.user);
 
             res.status(200).json(user);
         } catch (error) {
@@ -102,7 +155,7 @@ class UserView {
             const id = Number(req.params.id);
             const { email, password, name } = req.body;
 
-            const updatedUser = await UserController.update(id, email, password, name);
+            const updatedUser = await UserController.update(id, email, password, name, req.user);
 
             res.status(200).json(updatedUser);
         } catch (error) {
@@ -113,7 +166,8 @@ class UserView {
     async delete(req, res, next) {
         try {
             const id = Number(req.params.id);
-            await UserController.delete(id);
+            const receiptPaths = await UserController.delete(id, req.user);
+            await cleanupExpenseReceipts(receiptPaths);
 
             res.status(204).send();
         } catch (error) {
