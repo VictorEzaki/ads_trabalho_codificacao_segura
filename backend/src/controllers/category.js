@@ -72,12 +72,12 @@ class CategoryController {
     async delete(id) {
         // ID é obrigatório para edição
         if (!id) {
-            throw new Error('ID é obrigatório.')
+            throw new HttpError(400, 'ID é obrigatório.');
         }
         
         // verifica se ID é maior que zero
         if (id < 1) {
-            throw new Error('ID não pode ser menor que 1.')
+            throw new HttpError(400, 'ID não pode ser menor que 1.');
         }
         
         const category = await CategoryModel.getById(Number(id));
