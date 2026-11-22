@@ -8,6 +8,16 @@ const MAX_AMOUNT = 99999999.99;
  * Converte e valida identificadores inteiros positivos.
  */
 function parsePositiveId(value, fieldLabel = 'ID') {
+    if (
+        value === undefined ||
+        value === null ||
+        typeof value === 'boolean' ||
+        typeof value === 'object' ||
+        (typeof value === 'string' && value.trim() === '')
+    ) {
+        throw new HttpError(400, `${fieldLabel} inválido.`);
+    }
+
     const parsed = Number(value);
     if (!Number.isInteger(parsed) || parsed < 1) {
         throw new HttpError(400, `${fieldLabel} inválido.`);
@@ -43,10 +53,7 @@ function sanitizeText(value, { fieldName = 'Campo', minLength = 1, maxLength = 2
     return cleaned;
 }
 
-/**
- * Valida valores monetários estritamente positivos e finitos com até duas casas decimais.
- */
-function parsePositiveAmount(value, fieldName = 'Valor') {
+function parseAmount(value, { fieldName = 'Valor', allowZero = false } = {}) {
     if (
         value === undefined ||
         value === null ||
@@ -58,11 +65,32 @@ function parsePositiveAmount(value, fieldName = 'Valor') {
     }
 
     const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed <= 0 || parsed > MAX_AMOUNT) {
-        throw new HttpError(400, `${fieldName} deve ser maior que zero.`);
+    if (!Number.isFinite(parsed) || parsed > MAX_AMOUNT) {
+        throw new HttpError(400, `${fieldName} inválido.`);
+    }
+
+    if (allowZero ? parsed < 0 : parsed <= 0) {
+        throw new HttpError(
+            400,
+            allowZero ? `${fieldName} não pode ser negativo.` : `${fieldName} deve ser maior que zero.`
+        );
     }
 
     return Math.round(parsed * 100) / 100;
+}
+
+/**
+ * Valida valores monetários estritamente positivos e finitos com até duas casas decimais.
+ */
+function parsePositiveAmount(value, fieldName = 'Valor') {
+    return parseAmount(value, { fieldName, allowZero: false });
+}
+
+/**
+ * Valida valores monetários não negativos (zero ou positivos) para limites de filtro.
+ */
+function parseNonNegativeAmount(value, fieldName = 'Valor') {
+    return parseAmount(value, { fieldName, allowZero: true });
 }
 
 /**
@@ -76,9 +104,9 @@ function getTodayLocalIsoDate(now = new Date()) {
 }
 
 /**
- * Valida data YYYY-MM-DD real no calendário e garante que não é futura.
+ * Valida formato YYYY-MM-DD e existência real da data no calendário.
  */
-function validatePastOrTodayDate(value, fieldName = 'Data', now = new Date()) {
+function validateIsoDate(value, fieldName = 'Data') {
     if (typeof value !== 'string' || !ISO_DATE_REGEX.test(value)) {
         throw new HttpError(400, `${fieldName} inválida. Use o formato YYYY-MM-DD.`);
     }
@@ -94,18 +122,36 @@ function validatePastOrTodayDate(value, fieldName = 'Data', now = new Date()) {
         throw new HttpError(400, `${fieldName} inválida.`);
     }
 
+    return value;
+}
+
+/**
+ * Valida data YYYY-MM-DD real no calendário e garante que não é futura.
+ */
+function validatePastOrTodayDate(value, fieldName = 'Data', now = new Date()) {
+    const validDate = validateIsoDate(value, fieldName);
     const today = getTodayLocalIsoDate(now);
-    if (value > today) {
+    if (validDate > today) {
         throw new HttpError(400, `${fieldName} não pode ser maior que a data atual.`);
     }
 
-    return value;
+    return validDate;
+}
+
+/**
+ * Verifica se um parâmetro opcional de filtro veio vazio/não informado.
+ */
+function isEmptyFilterValue(value) {
+    return value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
 }
 
 module.exports = {
     parsePositiveId,
     sanitizeText,
     parsePositiveAmount,
+    parseNonNegativeAmount,
+    validateIsoDate,
     validatePastOrTodayDate,
     getTodayLocalIsoDate,
+    isEmptyFilterValue,
 };

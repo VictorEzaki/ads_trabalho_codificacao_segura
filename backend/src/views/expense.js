@@ -1,6 +1,7 @@
 // req, res
 const ExpenseController = require('../controllers/expense');
 const HttpError = require('./../errors/HttpError');
+const { parsePositiveId } = require('../utils/inputValidator');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -23,7 +24,7 @@ class ExpenseView {
         try {
             const { id } = req.params;
             
-            const expense = await ExpenseController.getById(Number(id), req.user);
+            const expense = await ExpenseController.getById(id, req.user);
             
             res.status(200).json(expense);
         } catch (error) {
@@ -53,8 +54,8 @@ class ExpenseView {
             }
 
             const expense = await ExpenseController.create(
-                Number(amount), date, description, status,
-                Number(categoryId), userId, receiptPath
+                amount, date, description, status,
+                categoryId, userId, receiptPath
             );
 
             res.status(201).json(expense);
@@ -84,10 +85,10 @@ class ExpenseView {
                 receiptPath = req.file.filename;
             }
 
-            const previousReceipt = req.file ? await ExpenseController.getReceiptPathForUpdate(Number(id), req.user) : null;
+            const previousReceipt = req.file ? await ExpenseController.getReceiptPathForUpdate(id, req.user) : null;
             const expense = await ExpenseController.update(
-                amount === undefined ? undefined : Number(amount), date, description, status,
-                categoryId === undefined ? undefined : Number(categoryId), req.user, Number(id), receiptPath
+                amount, date, description, status,
+                categoryId, req.user, id, receiptPath
             );
 
             if (req.file && previousReceipt && previousReceipt !== receiptPath) {
@@ -102,11 +103,11 @@ class ExpenseView {
 
     async getReceipt(req, res, next) {
         try {
-            const filename = await ExpenseController.getReceipt(Number(req.params.id), req.user);
+            const safeId = parsePositiveId(req.params.id, 'ID');
+            const filename = await ExpenseController.getReceipt(safeId, req.user);
             const safePath = path.join(uploadDirectory, path.basename(filename));
             await fs.access(safePath);
             const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
-            const safeId = Number(req.params.id);
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('X-Content-Type-Options', 'nosniff');
             res.setHeader('Content-Disposition', `${disposition}; filename="cupom-${safeId}.pdf"`);
@@ -120,7 +121,7 @@ class ExpenseView {
         try {
             const { id } = req.params;
             
-            const deletedReceiptPath = await ExpenseController.delete(Number(id), req.user);
+            const deletedReceiptPath = await ExpenseController.delete(id, req.user);
             if (deletedReceiptPath) {
                 await fs.unlink(path.join(uploadDirectory, path.basename(deletedReceiptPath))).catch(() => {});
             }
