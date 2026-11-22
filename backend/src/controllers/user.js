@@ -14,6 +14,10 @@ const {
     generateCsrfToken,
 } = require('../utils/token');
 
+const CONTROL_CHARS_REGEX = /[\u0000-\u001F\u007F]/;
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_BYTES = 72;
+
 function validateUserEmail(email) {
     const cleaned = sanitizeText(email, {
         fieldName: 'Email',
@@ -50,8 +54,28 @@ function validatePassword(password, { required = true } = {}) {
         throw new HttpError(400, 'Senha inválida.');
     }
 
-    if (password.length < 6) {
-        throw new HttpError(400, 'A senha deve conter pelo menos 6 caracteres');
+    if (CONTROL_CHARS_REGEX.test(password)) {
+        throw new HttpError(400, 'A senha não pode conter caracteres de controle.');
+    }
+
+    if (password.length < PASSWORD_MIN_LENGTH) {
+        throw new HttpError(400, 'A senha deve conter pelo menos 8 caracteres.');
+    }
+
+    if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX_BYTES) {
+        throw new HttpError(400, 'A senha deve ter no máximo 72 bytes.');
+    }
+
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9\s]/.test(password);
+
+    if (!hasLower || !hasUpper || !hasDigit || !hasSpecial) {
+        throw new HttpError(
+            400,
+            'A senha deve conter pelo menos uma letra maiúscula, uma minúscula, um número e um caractere especial.'
+        );
     }
 
     return password;

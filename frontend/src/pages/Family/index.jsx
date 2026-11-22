@@ -290,11 +290,12 @@ function Family() {
                 <input
                   type="password"
                   name="password"
-                  minLength={6}
+                  minLength={8}
+                  maxLength={72}
                   placeholder={
                     editingMember
                       ? "Deixe em branco para manter a senha atual"
-                      : "Mínimo de 6 caracteres"
+                      : "Mín. 8 chars (maiúscula, minúscula, número e especial)"
                   }
                   value={formData.password}
                   onChange={handleChange}

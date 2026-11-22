@@ -106,7 +106,9 @@ function Register() {
               type="password"
               id="password"
               name="password"
-              placeholder="Digite sua senha"
+              minLength={8}
+              maxLength={72}
+              placeholder="Mín. 8 caracteres (maiúscula, minúscula, número e especial)"
               value={formData.password}
               onChange={handleChange}
               required
