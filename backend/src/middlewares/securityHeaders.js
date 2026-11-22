@@ -46,7 +46,7 @@ function createSecurityHeadersMiddleware({ isProduction = process.env.NODE_ENV =
   const swaggerHelmet = helmet(buildHelmetOptions({ isProduction, allowSwaggerUi: true }));
 
   return (req, res, next) => {
-    if (req.path === '/api-docs' || req.path.startsWith('/api-docs/')) {
+    if (!isProduction && (req.path === '/api-docs' || req.path.startsWith('/api-docs/'))) {
       return swaggerHelmet(req, res, next);
     }
     return apiHelmet(req, res, next);
