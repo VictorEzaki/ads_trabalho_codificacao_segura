@@ -71,7 +71,7 @@ class ExpenseModel {
         }
 
         // filtrar categoria
-        if (categoryId) {
+        if (categoryId !== undefined && categoryId !== null) {
             where.categoryId = categoryId;
         }
         
@@ -85,10 +85,18 @@ class ExpenseModel {
             where.date = {
                 [Op.between]: [dateIni, dateFim]
             };
+        } else if (dateIni) {
+            where.date = {
+                [Op.gte]: dateIni
+            };
+        } else if (dateFim) {
+            where.date = {
+                [Op.lte]: dateFim
+            };
         }
         
         // valor mínimo
-        if (vlMin) {
+        if (vlMin !== undefined && vlMin !== null) {
             where.amount = {
                 ...where.amount,
                 [Op.gte]: vlMin
@@ -96,7 +104,7 @@ class ExpenseModel {
         }
         
         // valor máximo
-        if (vlMax) {
+        if (vlMax !== undefined && vlMax !== null) {
             where.amount = {
                 ...where.amount,
                 [Op.lte]: vlMax

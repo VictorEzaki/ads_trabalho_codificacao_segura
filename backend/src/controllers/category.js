@@ -1,91 +1,78 @@
 // validações e regra de negócio
 const HttpError = require('../errors/HttpError');
 const CategoryModel = require('../models/category');
+const { parsePositiveId, sanitizeText } = require('../utils/inputValidator');
+
+function validateCategoryPayload(name, description) {
+    const safeName = sanitizeText(name, {
+        fieldName: 'Nome da categoria',
+        minLength: 1,
+        maxLength: 255,
+        required: true,
+    });
+
+    const safeDescription = sanitizeText(description, {
+        fieldName: 'Descrição da categoria',
+        minLength: 0,
+        maxLength: 255,
+        required: false,
+    });
+
+    return { safeName, safeDescription };
+}
 
 class CategoryController {
-    async getAll() {   
+    async getAll() {
         return await CategoryModel.getAll();
     }
-    
+
     async getById(id) {
-        if (!id) {
-            throw new HttpError(400, 'ID é obrigatório.');
-        }
-        
-        if (id < 1) {
-            throw new HttpError(400, 'ID não pode ser menor que 1.');
-        }
-        
-        const category = await CategoryModel.getById(id); 
+        const safeId = parsePositiveId(id, 'ID');
+        const category = await CategoryModel.getById(safeId);
         if (!category) {
             throw new HttpError(404, 'Categoria não encontrada.');
         }
-        
+
         return category;
     }
-    
+
     async create(name, description) {
-        // verifica se foi enviado com o tipo correto(string)
-        if (description !== undefined && typeof description !== "string") {
-            throw new HttpError(400, "Descrição de categoria ausente ou inválido.");
-        }
-        
-        const categoryCreated = await CategoryModel.create(name, description)
-        
+        const { safeName, safeDescription } = validateCategoryPayload(name, description);
+
+        const categoryCreated = await CategoryModel.create(safeName, safeDescription);
         if (!categoryCreated) {
             throw new HttpError(500, 'Erro ao criar categoria.');
         }
-        
+
         return categoryCreated;
     }
-    
+
     async update(name, description, id) {
-        // validações da regra de negócio
-        // ID é obrigatório para edição
-        if (!id) {
-            throw new HttpError(400, 'ID é obrigatório.')
-        }
-        
-        // verifica se ID é maior que zero
-        if (id < 1) {
-            throw new HttpError(400, 'ID não pode ser menor que 1.')
-        }
-        
-        // verifica se foi enviado com o tipo correto(string)
-        if (description !== undefined && typeof description !== "string") {
-            throw new HttpError(400, "Descrição de categoria ausente ou inválido.");
-        }
-        
-        const category = await CategoryModel.getById(id);
+        const safeId = parsePositiveId(id, 'ID');
+        const { safeName, safeDescription } = validateCategoryPayload(name, description);
+
+        const category = await CategoryModel.getById(safeId);
         if (!category) {
             throw new HttpError(404, 'Categoria não encontrada.');
         }
-        
-        const categoryUpdated = await CategoryModel.update(name, description, id);
+
+        const categoryUpdated = await CategoryModel.update(safeName, safeDescription, safeId);
         if (!categoryUpdated) {
             throw new HttpError(500, 'Ocorreu um erro ao editar a categoria!');
         }
-        
+
         return categoryUpdated;
     }
-    
+
     async delete(id) {
-        // ID é obrigatório para edição
-        if (!id) {
-            throw new HttpError(400, 'ID é obrigatório.');
-        }
-        
-        // verifica se ID é maior que zero
-        if (id < 1) {
-            throw new HttpError(400, 'ID não pode ser menor que 1.');
-        }
-        
-        const category = await CategoryModel.getById(Number(id));
+        const safeId = parsePositiveId(id, 'ID');
+
+        const category = await CategoryModel.getById(safeId);
         if (!category) {
             throw new HttpError(404, 'Categoria não encontrada.');
         }
-        
-        return CategoryModel.delete(Number(id));
+
+        return CategoryModel.delete(safeId);
     }
 }
 

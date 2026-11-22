@@ -1,6 +1,5 @@
 // req, res
 const CategoryController = require('../controllers/category');
-const HttpError = require('./../errors/HttpError');
 
 class CategoryView {
     async getAll(req, res, next) {
@@ -17,7 +16,7 @@ class CategoryView {
         try {
             const { id } = req.params;
 
-            const category = await CategoryController.getById(Number(id));
+            const category = await CategoryController.getById(id);
 
             res.status(200).json(category);
         } catch (error) {
@@ -33,7 +32,7 @@ class CategoryView {
 
             res.status(201).json(category);
         } catch (error) {
-            next(error)
+            next(error);
         }
     }
 
@@ -42,11 +41,11 @@ class CategoryView {
             const { name, description } = req.body;
             const { id } = req.params;
 
-            const category = await CategoryController.update(name, description, Number(id));
+            const category = await CategoryController.update(name, description, id);
 
             res.status(200).json(category);
         } catch (error) {
-            next(error)
+            next(error);
         }
     }
 
@@ -54,11 +53,11 @@ class CategoryView {
         try {
             const { id } = req.params;
 
-            await CategoryController.delete(Number(id));
+            await CategoryController.delete(id);
 
             res.status(204).send();
         } catch (error) {
-            next(error)
+            next(error);
         }
     }
 }
