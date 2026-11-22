@@ -106,8 +106,10 @@ class ExpenseView {
             const safePath = path.join(uploadDirectory, path.basename(filename));
             await fs.access(safePath);
             const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
+            const safeId = Number(req.params.id);
             res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `${disposition}; filename="cupom-${req.params.id}.pdf"`);
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Content-Disposition', `${disposition}; filename="cupom-${safeId}.pdf"`);
             res.sendFile(safePath);
         } catch (error) {
             next(error);
