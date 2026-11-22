@@ -1,8 +1,15 @@
 'use strict';
 
+function assertNotProduction() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Seeders de demonstração não podem ser executados em produção.');
+  }
+}
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
+    assertNotProduction();
     await queryInterface.bulkInsert("expenses", [
       {
         description: "Supermercado mensal",
@@ -64,6 +71,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
+    assertNotProduction();
     await queryInterface.bulkDelete("expenses", null, {});
   }
 };

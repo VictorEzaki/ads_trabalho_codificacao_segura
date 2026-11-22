@@ -9,10 +9,13 @@ const csrfMiddleware = require('./middlewares/csrf.js');
 const { createSecurityHeadersMiddleware } = require('./middlewares/securityHeaders.js');
 const HttpError = require('./errors/HttpError.js');
 
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./swagger');
 app.use(createSecurityHeadersMiddleware());
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+if (process.env.NODE_ENV !== 'production') {
+  const swaggerUi = require('swagger-ui-express');
+  const swaggerSpec = require('./swagger');
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 const sequelize = require('./models/database.js');
 require('./models/associations');
