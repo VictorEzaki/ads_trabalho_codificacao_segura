@@ -7,6 +7,7 @@ const app = express();
 const errorHandlerMiddleware = require('./middlewares/errorHandler.js');
 const csrfMiddleware = require('./middlewares/csrf.js');
 const { createSecurityHeadersMiddleware } = require('./middlewares/securityHeaders.js');
+const HttpError = require('./errors/HttpError.js');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
@@ -31,7 +32,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(new Error('Origem não permitida pelo CORS'));
+    return callback(new HttpError(403, 'Origem não permitida pelo CORS.'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
